@@ -324,17 +324,15 @@ def scan():
         scan_type = request.form.get('scan_type', 'basic')
 
         if scan_type == 'basic':
-            import shutil
-            nmap_bin = shutil.which('nmap') or 'nmap'
-            cmd = [nmap_bin, '-F', '--open', target]
+            cmd = ['/usr/bin/nmap', '-F', '--open', target]
         elif scan_type == 'os':
-            cmd = ['nmap', '-O', '--open', target]
+            cmd = ['/usr/bin/nmap', '-O', '--open', target]
         elif scan_type == 'ports':
-            cmd = ['nmap', '-p', '1-1000', target]
+            cmd = ['/usr/bin/nmap', '-p', '1-1000', target]
         elif scan_type == 'vuln':
-            cmd = ['nmap', '--script', 'vuln', '-F', target]
+            cmd = ['/usr/bin/nmap', '--script', 'vuln', '-F', target]
         else:
-            cmd = ['nmap', '-F', target]
+            cmd = ['/usr/bin/nmap', '-F', target]
 
         try:
             proc = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
@@ -342,9 +340,7 @@ def scan():
         except subprocess.TimeoutExpired:
             result = 'Scan timed out after 60 seconds.'
         except FileNotFoundError:
-            import shutil
-            nmap_path = shutil.which('nmap') or '/usr/bin/nmap' or '/bin/nmap'
-            result = f'nmap not found at standard paths. Server nmap status: {nmap_path}'
+            result = 'nmap not found. Run: sudo apt install nmap'
 
         log_action(db, AuditLog, current_user.username,
                    f"Ran {scan_type} scan on {target}", request.remote_addr)
