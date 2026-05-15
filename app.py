@@ -2283,10 +2283,9 @@ with app.app_context():
     db.create_all()
     # Create default admin if not exists
     from models import User
-    import bcrypt
     if not User.query.filter_by(username='admin').first():
-        hashed = bcrypt.hashpw('admin123'.encode(), bcrypt.gensalt()).decode()
-        admin = User(username='admin', password=hashed, role='admin')
+        admin = User(username='admin', role='admin')
+        admin.set_password('admin123')
         db.session.add(admin)
         db.session.commit()
 
