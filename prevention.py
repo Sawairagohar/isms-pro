@@ -6,6 +6,8 @@ import re
 from datetime import datetime, timedelta
 from collections import defaultdict
 
+import os
+os.makedirs('logs', exist_ok=True)
 logging.basicConfig(
     filename='logs/prevention.log',
     level=logging.INFO,
