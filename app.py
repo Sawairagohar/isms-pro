@@ -2401,7 +2401,7 @@ with app.app_context():
             for cid, name, theme in CONTROLS:
                 db.session.add(SoAControl(
                     control_id=cid,
-                    name=name,
+                    control_name=name,
                     theme=theme,
                     applicable=True,
                     implemented=False
