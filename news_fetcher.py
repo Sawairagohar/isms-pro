@@ -3,6 +3,8 @@ import logging
 import re
 from datetime import datetime
 
+import os
+os.makedirs('logs', exist_ok=True)
 logging.basicConfig(filename='logs/news.log', level=logging.INFO)
 
 # Real cybersecurity RSS feeds
