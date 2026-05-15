@@ -18,6 +18,7 @@ import numpy as np
 
 
 from flask_mail import Mail, Message
+from news_fetcher import fetch_security_news
 from prevention import record_failed_login, scan_request_for_attacks, fetch_latest_cves, auto_port_scan_and_fix, full_security_health_check, get_blocked_ips, get_suspicious_ips, is_blocked
 
 
