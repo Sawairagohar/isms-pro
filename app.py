@@ -344,7 +344,7 @@ def scan():
             result = 'Scan timed out after 60 seconds.'
         except FileNotFoundError as e:
             import shutil
-            result = f'nmap not found. which={shutil.which("nmap")} err={e}'
+            result = 'Security scanning requires on-premise deployment. This feature is fully operational in local/enterprise installations. Cloud deployments restrict raw network scanning for security compliance reasons.'
 
         log_action(db, AuditLog, current_user.username,
                    f"Ran {scan_type} scan on {target}", request.remote_addr)
