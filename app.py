@@ -2284,7 +2284,7 @@ with app.app_context():
     # Create default admin if not exists
     from models import User
     if not User.query.filter_by(username='admin').first():
-        admin = User(username='admin', role='admin')
+        admin = User(username='admin', role='admin', email='admin@isms.local')
         admin.set_password('admin123')
         db.session.add(admin)
         db.session.commit()
