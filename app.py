@@ -324,7 +324,9 @@ def scan():
         scan_type = request.form.get('scan_type', 'basic')
 
         if scan_type == 'basic':
-            cmd = ['nmap', '-F', '--open', target]
+            import shutil
+            nmap_bin = shutil.which('nmap') or 'nmap'
+            cmd = [nmap_bin, '-F', '--open', target]
         elif scan_type == 'os':
             cmd = ['nmap', '-O', '--open', target]
         elif scan_type == 'ports':
@@ -340,7 +342,9 @@ def scan():
         except subprocess.TimeoutExpired:
             result = 'Scan timed out after 60 seconds.'
         except FileNotFoundError:
-            result = 'nmap not found. Run: sudo apt install nmap'
+            import shutil
+            nmap_path = shutil.which('nmap') or '/usr/bin/nmap' or '/bin/nmap'
+            result = f'nmap not found at standard paths. Server nmap status: {nmap_path}'
 
         log_action(db, AuditLog, current_user.username,
                    f"Ran {scan_type} scan on {target}", request.remote_addr)
