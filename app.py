@@ -713,8 +713,11 @@ def blog():
 @login_required
 @role_required("admin")
 def blog_fetch():
-    count = fetch_security_news(app, db, BlogPost)
-    flash(f"Fetched {count} new articles from cybersecurity feeds.", "success")
+    try:
+        count = fetch_security_news(app, db, BlogPost)
+        flash(f"Fetched {count} new articles from cybersecurity feeds.", "success")
+    except Exception as e:
+        flash(f"News fetch error: {str(e)}", "danger")
     return redirect(url_for("blog"))
 
 @app.route("/blog/new", methods=["GET", "POST"])
