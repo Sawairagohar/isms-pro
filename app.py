@@ -2278,6 +2278,18 @@ def audit_export_pdf(plan_id):
     return Response(pdf, mimetype="application/pdf",
         headers={"Content-Disposition": f"attachment;filename=audit_{plan_id}.pdf"})
 
+# Auto-create database on startup
+with app.app_context():
+    db.create_all()
+    # Create default admin if not exists
+    from models import User
+    import bcrypt
+    if not User.query.filter_by(username='admin').first():
+        hashed = bcrypt.hashpw('admin123'.encode(), bcrypt.gensalt()).decode()
+        admin = User(username='admin', password=hashed, role='admin')
+        db.session.add(admin)
+        db.session.commit()
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
