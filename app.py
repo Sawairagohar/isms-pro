@@ -335,12 +335,16 @@ def scan():
             cmd = ['/usr/bin/nmap', '-F', target]
 
         try:
+            import shutil
+            nmap_bin = shutil.which('nmap') or '/usr/bin/nmap' or '/usr/local/bin/nmap'
+            cmd[0] = nmap_bin
             proc = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
-            result = proc.stdout or proc.stderr
+            result = proc.stdout or proc.stderr or f'No output. nmap path used: {nmap_bin}'
         except subprocess.TimeoutExpired:
             result = 'Scan timed out after 60 seconds.'
-        except FileNotFoundError:
-            result = 'nmap not found. Run: sudo apt install nmap'
+        except FileNotFoundError as e:
+            import shutil
+            result = f'nmap not found. which={shutil.which("nmap")} err={e}'
 
         log_action(db, AuditLog, current_user.username,
                    f"Ran {scan_type} scan on {target}", request.remote_addr)
