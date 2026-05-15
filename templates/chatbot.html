@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}AI Security Assistant{% endblock %}
+{% block content %}
+<style>
+  .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:28px; padding-bottom:20px; border-bottom:1px solid #1e293b; }
+  .topbar h1 { font-size:20px; }
+  .chat-container { display:flex; flex-direction:column; height:65vh; background:#1e293b; border-radius:12px; border:1px solid #334155; overflow:hidden; }
+  .chat-messages { flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:14px; }
+  .msg { max-width:80%; padding:12px 16px; border-radius:12px; font-size:13px; line-height:1.6; }
+  .msg.user { background:#3b82f6; color:white; align-self:flex-end; border-bottom-right-radius:4px; }
+  .msg.assistant { background:#0f172a; color:#e2e8f0; align-self:flex-start; border-bottom-left-radius:4px; border:1px solid #334155; }
+  .msg.system { background:#1e3a2f; color:#86efac; align-self:center; font-size:12px; padding:8px 14px; border-radius:20px; }
+  .chat-input { display:flex; gap:10px; padding:16px; border-top:1px solid #334155; background:#0f172a; }
+  .chat-input input { flex:1; padding:10px 16px; background:#1e293b; border:1px solid #334155; border-radius:8px; color:#f1f5f9; font-size:13px; outline:none; }
+  .chat-input button { padding:10px 20px; background:#3b82f6; color:white; border:none; border-radius:8px; cursor:pointer; font-size:13px; }
+  .chat-input button:disabled { background:#334155; color:#64748b; cursor:not-allowed; }
+  .typing { display:none; align-self:flex-start; background:#0f172a; border:1px solid #334155; border-radius:12px; padding:12px 16px; }
+  .typing span { display:inline-block; width:8px; height:8px; background:#64748b; border-radius:50%; margin:0 2px; animation:bounce 1.2s infinite; }
+  .typing span:nth-child(2) { animation-delay:0.2s; }
+  .typing span:nth-child(3) { animation-delay:0.4s; }
+  @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+  .suggestions { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
+  .suggestion { padding:6px 14px; background:#1e293b; border:1px solid #334155; border-radius:20px; font-size:12px; color:#94a3b8; cursor:pointer; }
+  .suggestion:hover { border-color:#3b82f6; color:#3b82f6; }
+  .info-bar { background:#1e3a5f; border-radius:8px; padding:10px 16px; font-size:12px; color:#93c5fd; margin-bottom:16px; }
+</style>
+
+<div class="topbar">
+  <h1>🤖 AI Security Assistant
+    <span style="font-size:12px;color:#3b82f6;margin-left:8px;">Powered by Claude — Answers based on your ISO 27001 policies</span>
+  </h1>
+</div>
+
+<div class="info-bar">
+  💡 This AI is trained on your organisation's security policies. Ask it anything about your ISMS, ISO 27001 controls, or what to do in a security incident.
+</div>
+
+<div class="suggestions">
+  <span class="suggestion" onclick="askQuestion(this)">What do I do if I find a virus?</span>
+  <span class="suggestion" onclick="askQuestion(this)">What is our password policy?</span>
+  <span class="suggestion" onclick="askQuestion(this)">How do I report a security incident?</span>
+  <span class="suggestion" onclick="askQuestion(this)">What is ISO 27001 Clause 8.2?</span>
+  <span class="suggestion" onclick="askQuestion(this)">Who is responsible for data protection?</span>
+  <span class="suggestion" onclick="askQuestion(this)">What are my responsibilities when leaving the company?</span>
+</div>
+
+<div class="chat-container">
+  <div class="chat-messages" id="messages">
+    <div class="msg system">👋 Hello {{ current_user.username }}! I am your ISO 27001 Security Assistant. Ask me anything about your security policies or controls.</div>
+  </div>
+  <div class="typing" id="typing">
+    <span></span><span></span><span></span>
+  </div>
+  <div class="chat-input">
+    <input type="text" id="userInput" placeholder="Ask a security question..." onkeypress="if(event.key==='Enter')sendMessage()">
+    <button onclick="sendMessage()" id="sendBtn">Send</button>
+  </div>
+</div>
+
+<script>
+const policyContext = {{ policy_context | tojson }};
+const conversationHistory = [];
+
+function askQuestion(el) {
+  document.getElementById('userInput').value = el.textContent;
+  sendMessage();
+}
+
+function addMessage(role, text) {
+  const messages = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  div.innerHTML = text.replace(/\n/g, '<br>');
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+async function sendMessage() {
+  const input = document.getElementById('userInput');
+  const btn = document.getElementById('sendBtn');
+  const typing = document.getElementById('typing');
+  const text = input.value.trim();
+  if (!text) return;
+
+  addMessage('user', text);
+  input.value = '';
+  btn.disabled = true;
+
+  // Show typing indicator inside chat
+  const messages = document.getElementById('messages');
+  messages.appendChild(typing);
+  typing.style.display = 'block';
+  messages.scrollTop = messages.scrollHeight;
+
+  conversationHistory.push({ role: 'user', content: text });
+
+  try {
+    const systemPrompt = `You are an ISO 27001 Information Security Management System (ISMS) assistant for this organisation. 
+Your job is to answer staff questions about information security policies, procedures, and ISO 27001 controls.
+
+Here are the organisation's current security policies:
+${policyContext || "No policies uploaded yet — answer based on ISO 27001 best practices."}
+
+Guidelines:
+- Answer clearly and practically
+- Reference specific policies when relevant
+- For incidents, give clear step-by-step actions
+- Keep answers concise but complete
+- If a policy doesn't cover something, answer based on ISO 27001 best practices
+- Always be helpful and professional`;
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: conversationHistory
+      })
+    });
+
+    const data = await response.json();
+    const reply = data.content[0].text;
+
+    conversationHistory.push({ role: 'assistant', content: reply });
+
+    typing.style.display = 'none';
+    addMessage('assistant', reply);
+
+  } catch (err) {
+    typing.style.display = 'none';
+    addMessage('assistant', '⚠ Error connecting to AI. Make sure the app is running correctly.');
+  }
+
+  btn.disabled = false;
+  input.focus();
+}
+</script>
+{% endblock %}

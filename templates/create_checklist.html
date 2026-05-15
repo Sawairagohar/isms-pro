@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Create Checklist{% endblock %}
+{% block content %}
+<style>
+  .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:28px; padding-bottom:20px; border-bottom:1px solid #1e293b; }
+  .topbar h1 { font-size:20px; }
+  .form-card { background:#1e293b; border-radius:12px; padding:28px; border:1px solid #334155; max-width:500px; }
+  .form-group { margin-bottom:20px; }
+  .form-group label { display:block; font-size:12px; color:#64748b; text-transform:uppercase; margin-bottom:8px; }
+  .form-group select, .form-group input { width:100%; padding:10px 14px; background:#0f172a; border:1px solid #334155; border-radius:8px; color:#f1f5f9; font-size:14px; outline:none; box-sizing:border-box; }
+  .btn { padding:12px 24px; border-radius:8px; font-size:13px; cursor:pointer; text-decoration:none; border:none; display:inline-block; }
+  .btn-primary { background:#3b82f6; color:white; width:100%; text-align:center; }
+  .btn-back { background:#334155; color:#f1f5f9; margin-right:10px; text-decoration:none; padding:10px 20px; border-radius:8px; font-size:13px; display:inline-block; }
+  .type-cards { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px; }
+  .type-card { background:#0f172a; border:2px solid #334155; border-radius:10px; padding:16px; cursor:pointer; text-align:center; transition:border-color 0.2s; }
+  .type-card:hover { border-color:#3b82f6; }
+  .type-card .tc-icon { font-size:28px; margin-bottom:8px; }
+  .type-card .tc-title { font-size:13px; font-weight:bold; color:#f1f5f9; }
+  .type-card .tc-sub { font-size:11px; color:#64748b; margin-top:4px; }
+</style>
+
+<div class="topbar">
+  <h1>📋 Create New Checklist</h1>
+  <a href="/checklists" class="btn-back">← Back</a>
+</div>
+
+<div class="form-card">
+  <form method="POST">
+    <div class="form-group">
+      <label>Checklist Type</label>
+      <div class="type-cards">
+        <label style="cursor:pointer;">
+          <input type="radio" name="checklist_type" value="onboarding" required style="display:none;" onclick="this.closest('.type-card') && this.closest('.type-card').style.setProperty('border-color','#16a34a')">
+          <div class="type-card" onclick="document.querySelectorAll('.type-card').forEach(c=>c.style.borderColor='#334155');this.style.borderColor='#16a34a';this.querySelector('input')&&this.querySelector('input').click(); document.getElementById('ob').checked=true;">
+            <div class="tc-icon">🟢</div>
+            <div class="tc-title">Onboarding</div>
+            <div class="tc-sub">New staff joining</div>
+            <input type="radio" name="checklist_type" value="onboarding" id="ob" style="display:none;">
+          </div>
+        </label>
+        <label style="cursor:pointer;">
+          <div class="type-card" onclick="document.querySelectorAll('.type-card').forEach(c=>c.style.borderColor='#334155');this.style.borderColor='#dc2626'; document.getElementById('offb').checked=true;">
+            <div class="tc-icon">🔴</div>
+            <div class="tc-title">Offboarding</div>
+            <div class="tc-sub">Staff leaving</div>
+            <input type="radio" name="checklist_type" value="offboarding" id="offb" style="display:none;">
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Select User</label>
+      <select name="username" required>
+        <option value="">— Select a user —</option>
+        {% for u in users %}
+        <option value="{{ u.username }}">{{ u.username }} ({{ u.role }})</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Create Checklist →</button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block title %}Access Review — Faseel Infosec{% endblock %}
+{% block content %}
+<style>
+  .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:28px; padding-bottom:20px; border-bottom:1px solid #1e293b; }
+  .topbar h1 { font-size:20px; }
+  .topbar a.logout { color:#f87171; text-decoration:none; font-size:13px; margin-left:16px; }
+  .stats-row { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:24px; }
+  .stat { background:#1e293b; border-radius:10px; padding:16px; border:1px solid #334155; text-align:center; }
+  .stat .sv { font-size:28px; font-weight:bold; }
+  .stat .sl { font-size:11px; color:#64748b; margin-top:4px; text-transform:uppercase; }
+  .review-banner { background:#1e293b; border-radius:12px; padding:20px 24px; border:1px solid #334155; margin-bottom:24px; display:flex; justify-content:space-between; align-items:center; }
+  .review-banner .rb-title { font-size:15px; font-weight:bold; color:#f1f5f9; }
+  .review-banner .rb-sub { font-size:12px; color:#64748b; margin-top:4px; }
+  .rb-badge { padding:6px 16px; background:#3b82f6; color:white; border-radius:8px; font-size:12px; font-weight:bold; }
+  .section-title { font-size:15px; font-weight:bold; margin-bottom:12px; margin-top:24px; display:flex; align-items:center; gap:8px; }
+  .user-card { background:#1e293b; border-radius:10px; padding:18px 20px; border:1px solid #334155; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; gap:16px; }
+  .user-card.flagged  { border-left:4px solid #dc2626; }
+  .user-card.inactive { border-left:4px solid #d97706; }
+  .user-card.active   { border-left:4px solid #16a34a; }
+  .user-info { flex:1; }
+  .user-name { font-size:14px; font-weight:bold; color:#f1f5f9; margin-bottom:4px; }
+  .user-meta { font-size:12px; color:#64748b; }
+  .badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:bold; margin-right:6px; }
+  .admin    { background:#1e3a5f; color:#93c5fd; }
+  .employee { background:#14532d; color:#86efac; }
+  .auditor  { background:#3b1f6e; color:#c4b5fd; }
+  .disabled { background:#334155; color:#94a3b8; }
+  .flag-reason { font-size:12px; color:#f87171; margin-top:4px; }
+  .inactive-reason { font-size:12px; color:#fbbf24; margin-top:4px; }
+  .btn-sm { padding:6px 14px; border-radius:8px; font-size:12px; cursor:pointer; text-decoration:none; border:none; }
+  .btn-disable { background:#dc2626; color:white; }
+  .btn-disable:hover { background:#b91c1c; }
+  .empty { color:#64748b; font-size:13px; padding:20px; text-align:center; background:#1e293b; border-radius:10px; border:1px solid #334155; }
+  .what-is { background:#0f172a; border-radius:10px; padding:16px 20px; border:1px solid #334155; margin-top:24px; }
+  .what-is h3 { font-size:12px; color:#64748b; text-transform:uppercase; margin-bottom:10px; }
+  .what-is p { font-size:13px; color:#94a3b8; line-height:1.7; }
+</style>
+
+<div class="topbar">
+  <h1>👥 Access Review
+    <span style="font-size:12px;color:#3b82f6;margin-left:8px;">Clause 5.18 — Quarterly User Access Review</span>
+  </h1>
+  <div style="font-size:13px;color:#64748b;">
+    {{ current_user.username }}
+    <a href="/logout" class="logout">Logout</a>
+  </div>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% for cat, msg in messages %}
+  <div style="padding:10px 16px;border-radius:8px;margin-bottom:20px;font-size:13px;
+    background:{% if cat=='success' %}#14532d{% else %}#7f1d1d{% endif %};
+    color:{% if cat=='success' %}#86efac{% else %}#fca5a5{% endif %};">{{ msg }}</div>
+  {% endfor %}
+{% endwith %}
+
+<div class="review-banner">
+  <div>
+    <div class="rb-title">Quarterly Access Review</div>
+    <div class="rb-sub">Conducted on {{ review_date }} — ISO 27001 Clause 5.18 requires regular access rights review</div>
+  </div>
+  <div class="rb-badge">Review Complete ✓</div>
+</div>
+
+<div class="stats-row">
+  <div class="stat"><div class="sv" style="color:#4ade80;">{{ active|length }}</div><div class="sl">Active Users</div></div>
+  <div class="stat"><div class="sv" style="color:#fbbf24;">{{ inactive|length }}</div><div class="sl">Inactive (30+ days)</div></div>
+  <div class="stat"><div class="sv" style="color:#f87171;">{{ flagged|length }}</div><div class="sl">Flagged</div></div>
+</div>
+
+{% if flagged %}
+<div class="section-title" style="color:#f87171;">🚨 Flagged Accounts ({{ flagged|length }})</div>
+{% for item in flagged %}
+<div class="user-card flagged">
+  <div class="user-info">
+    <div class="user-name">
+      {{ item.user.username }}
+      <span class="badge {{ item.user.role }}">{{ item.user.role }}</span>
+    </div>
+    <div class="user-meta">
+      {{ item.user.email }}
+      &nbsp;·&nbsp; Created: {{ item.user.created_at.strftime('%d %b %Y') }}
+      {% if item.last_login %}
+      &nbsp;·&nbsp; Last login: {{ item.last_login.strftime('%d %b %Y') }}
+      {% endif %}
+    </div>
+    <div class="flag-reason">⚠ {{ item.reason }}</div>
+  </div>
+  {% if item.user.role != 'admin' %}
+  <a href="/accessreview/disable/{{ item.user.id }}" class="btn-sm btn-disable"
+     onclick="return confirm('Disable account for {{ item.user.username }}?')">Disable Account</a>
+  {% endif %}
+</div>
+{% endfor %}
+{% endif %}
+
+{% if inactive %}
+<div class="section-title" style="color:#fbbf24;">⚠️ Inactive Accounts ({{ inactive|length }})</div>
+{% for item in inactive %}
+<div class="user-card inactive">
+  <div class="user-info">
+    <div class="user-name">
+      {{ item.user.username }}
+      <span class="badge {{ item.user.role }}">{{ item.user.role }}</span>
+    </div>
+    <div class="user-meta">
+      {{ item.user.email }}
+      &nbsp;·&nbsp; Last login: {{ item.last_login.strftime('%d %b %Y') if item.last_login else 'Never' }}
+    </div>
+    <div class="inactive-reason">No login for {{ item.days_since }} days — monitor closely</div>
+  </div>
+  {% if item.user.role != 'admin' %}
+  <a href="/accessreview/disable/{{ item.user.id }}" class="btn-sm btn-disable"
+     onclick="return confirm('Disable account for {{ item.user.username }}?')">Disable Account</a>
+  {% endif %}
+</div>
+{% endfor %}
+{% endif %}
+
+{% if active %}
+<div class="section-title" style="color:#4ade80;">✅ Active Accounts ({{ active|length }})</div>
+{% for item in active %}
+<div class="user-card active">
+  <div class="user-info">
+    <div class="user-name">
+      {{ item.user.username }}
+      <span class="badge {{ item.user.role }}">{{ item.user.role }}</span>
+    </div>
+    <div class="user-meta">
+      {{ item.user.email }}
+      &nbsp;·&nbsp; Last login: {{ item.last_login.strftime('%d %b %Y') if item.last_login else 'Never' }}
+      {% if item.days_since is not none %}
+      &nbsp;·&nbsp; {{ item.days_since }} days ago
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endfor %}
+{% endif %}
+
+<div class="what-is">
+  <h3>What is Access Review?</h3>
+  <p>ISO 27001 Clause 5.18 requires organizations to regularly review user access rights. This review identifies
+  inactive accounts that could be exploited by attackers, users with excessive privileges, and accounts belonging
+  to employees who have left. Conducting this review quarterly and documenting it here provides audit evidence
+  of your access control program.</p>
+</div>
+{% endblock %}

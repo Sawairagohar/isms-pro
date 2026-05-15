@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Corrective Actions — Faseel Infosec{% endblock %}
+{% block content %}
+<style>
+  .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:28px; padding-bottom:20px; border-bottom:1px solid #1e293b; }
+  .topbar h1 { font-size:20px; }
+  .topbar a.logout { color:#f87171; text-decoration:none; font-size:13px; margin-left:16px; }
+  .grid { display:grid; grid-template-columns:360px 1fr; gap:24px; align-items:start; }
+  .card { background:#1e293b; border-radius:12px; padding:24px; border:1px solid #334155; }
+  .card h2 { font-size:14px; color:#94a3b8; margin-bottom:18px; text-transform:uppercase; }
+  label { display:block; font-size:12px; color:#94a3b8; margin-bottom:5px; margin-top:13px; text-transform:uppercase; }
+  input[type=text], input[type=date], textarea { width:100%; padding:9px 12px; border-radius:8px; border:1px solid #475569; background:#0f172a; color:#f1f5f9; font-size:13px; outline:none; }
+  .btn { margin-top:18px; width:100%; padding:11px; background:#7c3aed; color:white; border:none; border-radius:8px; font-size:14px; cursor:pointer; font-weight:bold; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th { text-align:left; color:#64748b; padding:8px 12px; border-bottom:1px solid #334155; font-weight:normal; font-size:12px; text-transform:uppercase; }
+  td { padding:10px 12px; border-bottom:1px solid #1a2744; color:#cbd5e1; }
+  .badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:bold; }
+  .Open   { background:#7f1d1d; color:#fca5a5; }
+  .Closed { background:#14532d; color:#86efac; }
+  .btn-sm { padding:4px 12px; background:#16a34a; color:white; border:none; border-radius:6px; font-size:12px; cursor:pointer; text-decoration:none; }
+  .empty { color:#64748b; font-size:13px; padding:30px; text-align:center; }
+</style>
+
+<div class="topbar">
+  <h1>📋 Corrective Actions
+    <span style="font-size:12px;color:#3b82f6;margin-left:8px;">Clause 10 — Continuous Improvement</span>
+  </h1>
+  <div style="font-size:13px;color:#64748b;">
+    {{ current_user.username }}
+    <a href="/logout" class="logout">Logout</a>
+  </div>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% for cat, msg in messages %}
+  <div style="padding:10px 16px;border-radius:8px;margin-bottom:20px;font-size:13px;background:#14532d;color:#86efac;">{{ msg }}</div>
+  {% endfor %}
+{% endwith %}
+
+<div class="grid">
+  <div class="card">
+    <h2>New Corrective Action</h2>
+    <form method="POST">
+      <label>Title</label>
+      <input type="text" name="title" placeholder="e.g. Patch all unpatched systems" required>
+      <label>Description</label>
+      <textarea name="description" rows="3" placeholder="What needs to be fixed?"></textarea>
+      <label>Root Cause</label>
+      <textarea name="root_cause" rows="2" placeholder="Why did this happen?"></textarea>
+      <label>Assigned To</label>
+      <input type="text" name="assigned_to" placeholder="e.g. IT Team">
+      <label>Due Date</label>
+      <input type="date" name="due_date">
+      <button type="submit" class="btn">Create Action</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Action Log — {{ actions|length }} actions</h2>
+    {% if actions %}
+    <table>
+      <tr><th>Title</th><th>Assigned To</th><th>Due</th><th>Status</th><th>Action</th></tr>
+      {% for a in actions %}
+      <tr>
+        <td><strong>{{ a.title }}</strong>
+          {% if a.root_cause %}<br><span style="font-size:11px;color:#64748b;">Root cause: {{ a.root_cause[:50] }}</span>{% endif %}
+        </td>
+        <td>{{ a.assigned_to or '—' }}</td>
+        <td style="font-size:11px;">{{ a.due_date or '—' }}</td>
+        <td><span class="badge {{ a.status }}">{{ a.status }}</span></td>
+        <td>
+          {% if a.status == 'Open' %}
+          <a href="/actions/close/{{ a.id }}" class="btn-sm">Close</a>
+          {% else %}
+          <span style="color:#64748b;font-size:12px;">✓ Done</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}
+    <p class="empty">No corrective actions yet.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

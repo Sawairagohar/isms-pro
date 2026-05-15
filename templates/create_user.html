@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Create User{% endblock %}
+{% block content %}
+<style>
+  .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:28px; padding-bottom:20px; border-bottom:1px solid #1e293b; }
+  .topbar h1 { font-size:20px; }
+  .form-card { background:#1e293b; border-radius:12px; padding:28px; border:1px solid #334155; max-width:500px; }
+  .form-group { margin-bottom:20px; }
+  .form-group label { display:block; font-size:12px; color:#64748b; text-transform:uppercase; margin-bottom:8px; }
+  .form-group input, .form-group select { width:100%; padding:10px 14px; background:#0f172a; border:1px solid #334155; border-radius:8px; color:#f1f5f9; font-size:14px; outline:none; box-sizing:border-box; }
+  .btn { padding:12px 24px; border-radius:8px; font-size:13px; cursor:pointer; text-decoration:none; border:none; display:inline-block; }
+  .btn-primary { background:#3b82f6; color:white; width:100%; text-align:center; }
+  .btn-back { background:#334155; color:#f1f5f9; text-decoration:none; padding:10px 20px; border-radius:8px; font-size:13px; display:inline-block; margin-bottom:20px; }
+  .info-box { background:#0f172a; border-radius:10px; padding:16px; border:1px solid #334155; margin-top:20px; }
+  .info-box p { font-size:12px; color:#64748b; line-height:1.7; }
+  .info-box strong { color:#3b82f6; }
+</style>
+
+<div class="topbar">
+  <h1>➕ Create New User
+    <span style="font-size:12px;color:#3b82f6;margin-left:8px;">Clause 6.1 — Onboarding checklist auto-generated</span>
+  </h1>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% for cat, msg in messages %}
+  <div style="padding:10px 16px;border-radius:8px;margin-bottom:20px;font-size:13px;
+    background:{% if cat=='success' %}#14532d{% else %}#7f1d1d{% endif %};
+    color:{% if cat=='success' %}#86efac{% else %}#fca5a5{% endif %};">{{ msg }}</div>
+  {% endfor %}
+{% endwith %}
+
+<a href="/checklists" class="btn-back">← Back to Checklists</a>
+
+<div class="form-card">
+  <form method="POST">
+    <div class="form-group">
+      <label>Username</label>
+      <input type="text" name="username" placeholder="e.g. john.smith" required>
+    </div>
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" name="email" placeholder="e.g. john@company.com" required>
+    </div>
+    <div class="form-group">
+      <label>Role</label>
+      <select name="role" required>
+        <option value="">— Select role —</option>
+        <option value="employee">Employee</option>
+        <option value="auditor">Auditor</option>
+        <option value="admin">Admin</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Temporary Password</label>
+      <input type="password" name="password" placeholder="Set a strong password" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Create User & Auto-Generate Checklist →</button>
+  </form>
+
+  <div class="info-box">
+    <p><strong>Fully Automated:</strong> As soon as you create this user, the system will automatically generate a 10-item onboarding security checklist assigned to them — no manual steps needed. This satisfies ISO 27001 Clause 6.1 requirements for pre-employment security controls.</p>
+  </div>
+</div>
+{% endblock %}

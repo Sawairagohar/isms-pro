@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Business Impact Mode — Faseel Infosec{% endblock %}
+{% block content %}
+<style>
+  .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:28px; padding-bottom:20px; border-bottom:1px solid #1e293b; }
+  .topbar h1 { font-size:20px; }
+  .topbar a.logout { color:#f87171; text-decoration:none; font-size:13px; margin-left:16px; }
+  .hero-banner { border-radius:16px; padding:32px; margin-bottom:28px; text-align:center; }
+  .hero-banner.CRITICAL { background:linear-gradient(135deg,#1c0a0a,#0f172a); border:1px solid #dc2626; }
+  .hero-banner.HIGH     { background:linear-gradient(135deg,#1c1206,#0f172a); border:1px solid #d97706; }
+  .hero-banner.MEDIUM   { background:linear-gradient(135deg,#0a1628,#0f172a); border:1px solid #2563eb; }
+  .hero-banner .hb-label { font-size:12px; color:#64748b; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; }
+  .hero-banner .hb-title { font-size:28px; font-weight:bold; margin-bottom:12px; }
+  .CRITICAL .hb-title { color:#f87171; }
+  .HIGH     .hb-title { color:#fbbf24; }
+  .MEDIUM   .hb-title { color:#60a5fa; }
+  .hero-banner .hb-sub { font-size:14px; color:#94a3b8; line-height:1.6; max-width:600px; margin:0 auto; }
+  .toggle-bar { display:flex; gap:10px; margin-bottom:24px; }
+  .toggle-btn { padding:8px 20px; border-radius:8px; font-size:13px; cursor:pointer; border:1px solid #334155; background:#1e293b; color:#94a3b8; text-decoration:none; }
+  .toggle-btn.active { background:#3b82f6; color:white; border-color:#3b82f6; }
+  .impacts-grid { display:grid; gap:16px; }
+  .impact-card { background:#1e293b; border-radius:12px; padding:24px; border:1px solid #334155; display:grid; grid-template-columns:60px 1fr; gap:16px; align-items:start; text-decoration:none; }
+  .impact-card:hover { border-color:#3b82f6; }
+  .impact-icon { font-size:36px; text-align:center; margin-top:4px; }
+  .impact-title { font-size:16px; font-weight:bold; color:#f1f5f9; margin-bottom:6px; }
+  .impact-technical { font-size:11px; color:#64748b; margin-bottom:10px; text-transform:uppercase; letter-spacing:0.5px; }
+  .impact-business { font-size:14px; color:#cbd5e1; line-height:1.7; margin-bottom:14px; }
+  .impact-action { display:inline-block; font-size:12px; padding:6px 16px; border-radius:20px; font-weight:bold; }
+  .CRITICAL-badge { background:#7f1d1d; color:#fca5a5; }
+  .HIGH-badge     { background:#78350f; color:#fcd34d; }
+  .MEDIUM-badge   { background:#1e3a5f; color:#93c5fd; }
+  .OPPORTUNITY-badge { background:#14532d; color:#86efac; }
+  .back-btn { display:inline-block; padding:8px 20px; background:#1e293b; color:#3b82f6; border:1px solid #334155; border-radius:8px; text-decoration:none; font-size:13px; margin-bottom:20px; }
+  .stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px; }
+  .stat-card { background:#1e293b; border-radius:10px; padding:16px; border:1px solid #334155; text-align:center; }
+  .stat-card .sv { font-size:32px; font-weight:bold; }
+  .stat-card .sl { font-size:11px; color:#64748b; margin-top:4px; text-transform:uppercase; }
+</style>
+
+<div class="topbar">
+  <h1>💼 Business Impact Mode
+    <span style="font-size:12px;color:#3b82f6;margin-left:8px;">Security risks explained in business terms</span>
+  </h1>
+  <div style="font-size:13px;color:#64748b;">
+    {{ current_user.username }}
+    <a href="/logout" class="logout">Logout</a>
+  </div>
+</div>
+
+<a href="/compliance" class="back-btn">← Back to Compliance</a>
+
+<div class="hero-banner {{ result.overall_risk }}">
+  <div class="hb-label">Overall Business Risk Level</div>
+  <div class="hb-title">{{ result.overall_risk }} RISK</div>
+  <div class="hb-sub">
+    Your current security posture presents {{ result.overall_risk.lower() }} business risk.
+    {% if result.overall_risk == 'CRITICAL' %}
+    Immediate executive action is required to avoid significant financial and legal exposure.
+    {% elif result.overall_risk == 'HIGH' %}
+    Significant gaps exist that could impact business operations, customer trust, and regulatory standing.
+    {% else %}
+    Moderate risks are present. Addressing them will strengthen your market position and reduce liability.
+    {% endif %}
+  </div>
+</div>
+
+<div class="stats-row">
+  <div class="stat-card">
+    <div class="sv" style="color:#f87171;">{{ result.critical_count }}</div>
+    <div class="sl">Critical Risks</div>
+  </div>
+  <div class="stat-card">
+    <div class="sv" style="color:#fbbf24;">{{ result.high_count }}</div>
+    <div class="sl">High Risks</div>
+  </div>
+  <div class="stat-card">
+    <div class="sv" style="color:#fbbf24;">{{ result.pending_training }}</div>
+    <div class="sl">Untrained Staff</div>
+  </div>
+  <div class="stat-card">
+    <div class="sv" style="color:#f87171;">{{ result.open_incidents }}</div>
+    <div class="sl">Open Incidents</div>
+  </div>
+</div>
+
+<div class="impacts-grid">
+  {% for impact in result.impacts %}
+  <a href="{{ impact.url }}" class="impact-card">
+    <div class="impact-icon">{{ impact.icon }}</div>
+    <div>
+      <div class="impact-title">{{ impact.title }}</div>
+      <div class="impact-technical">Technical: {{ impact.technical }}</div>
+      <div class="impact-business">{{ impact.business }}</div>
+      <span class="impact-action {{ impact.severity }}-badge">→ {{ impact.action }}</span>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% endblock %}

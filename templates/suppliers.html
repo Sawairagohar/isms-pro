@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+{% block title %}Supplier Risk Tracker — Faseel Infosec{% endblock %}
+{% block content %}
+<style>
+  .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:28px; padding-bottom:20px; border-bottom:1px solid #1e293b; }
+  .topbar h1 { font-size:20px; }
+  .topbar a.logout { color:#f87171; text-decoration:none; font-size:13px; margin-left:16px; }
+  .stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px; }
+  .stat { background:#1e293b; border-radius:10px; padding:16px; border:1px solid #334155; text-align:center; }
+  .stat .sv { font-size:28px; font-weight:bold; }
+  .stat .sl { font-size:11px; color:#64748b; margin-top:4px; text-transform:uppercase; }
+  .grid { display:grid; grid-template-columns:360px 1fr; gap:24px; align-items:start; }
+  .card { background:#1e293b; border-radius:12px; padding:24px; border:1px solid #334155; }
+  .card h2 { font-size:14px; color:#94a3b8; margin-bottom:18px; text-transform:uppercase; letter-spacing:0.5px; }
+  label { display:block; font-size:12px; color:#94a3b8; margin-bottom:5px; margin-top:13px; text-transform:uppercase; }
+  input[type=text], input[type=email], input[type=date], select, textarea { width:100%; padding:9px 12px; border-radius:8px; border:1px solid #475569; background:#0f172a; color:#f1f5f9; font-size:13px; outline:none; }
+  input:focus, select:focus { border-color:#3b82f6; }
+  select option { background:#1e293b; }
+  .checkbox-row { display:flex; align-items:center; gap:10px; margin-top:13px; }
+  .checkbox-row input[type=checkbox] { width:16px; height:16px; cursor:pointer; }
+  .checkbox-row span { font-size:13px; color:#cbd5e1; }
+  .btn { margin-top:18px; width:100%; padding:11px; background:#3b82f6; color:white; border:none; border-radius:8px; font-size:14px; cursor:pointer; font-weight:bold; }
+  .btn:hover { background:#2563eb; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th { text-align:left; color:#64748b; padding:8px 12px; border-bottom:1px solid #334155; font-weight:normal; font-size:12px; text-transform:uppercase; }
+  td { padding:11px 12px; border-bottom:1px solid #1a2744; color:#cbd5e1; vertical-align:top; }
+  tr:last-child td { border-bottom:none; }
+  tr:hover td { background:#0f172a; }
+  .badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:bold; }
+  .HIGH   { background:#7f1d1d; color:#fca5a5; }
+  .MEDIUM { background:#78350f; color:#fcd34d; }
+  .LOW    { background:#14532d; color:#86efac; }
+  .score-bar { background:#0f172a; border-radius:10px; height:6px; width:80px; overflow:hidden; margin-top:4px; }
+  .score-fill { height:6px; border-radius:10px; }
+  .empty { color:#64748b; font-size:13px; padding:30px; text-align:center; }
+  .check-yes { color:#4ade80; font-size:14px; }
+  .check-no  { color:#f87171; font-size:14px; }
+  .info-box { background:#0f172a; border-radius:8px; padding:14px; margin-top:16px; border:1px solid #334155; }
+  .info-box h3 { font-size:12px; color:#64748b; margin-bottom:8px; text-transform:uppercase; }
+  .info-box p { font-size:12px; color:#94a3b8; line-height:1.6; }
+</style>
+
+<div class="topbar">
+  <h1>🤝 Supplier Risk Tracker
+    <span style="font-size:12px;color:#3b82f6;margin-left:8px;">Controls 5.19-5.22 — Third Party Risk</span>
+  </h1>
+  <div style="font-size:13px;color:#64748b;">
+    {{ current_user.username }}
+    <a href="/logout" class="logout">Logout</a>
+  </div>
+</div>
+
+<div class="stats-row">
+  <div class="stat">
+    <div class="sv" style="color:#3b82f6;">{{ total }}</div>
+    <div class="sl">Total Suppliers</div>
+  </div>
+  <div class="stat">
+    <div class="sv" style="color:#f87171;">{{ high }}</div>
+    <div class="sl">High Risk</div>
+  </div>
+  <div class="stat">
+    <div class="sv" style="color:#fbbf24;">{{ medium }}</div>
+    <div class="sl">Medium Risk</div>
+  </div>
+  <div class="stat">
+    <div class="sv" style="color:#4ade80;">{{ low }}</div>
+    <div class="sl">Low Risk</div>
+  </div>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <h2>Add New Supplier</h2>
+    <form method="POST">
+      <label>Supplier Name</label>
+      <input type="text" name="name" placeholder="e.g. AWS, Microsoft, Local IT Co" required>
+
+      <label>Service Type</label>
+      <select name="service_type">
+        <option value="Cloud">Cloud — AWS, Azure, GCP</option>
+        <option value="IT">IT Services — support, maintenance</option>
+        <option value="Security">Security — MSSP, pen testing</option>
+        <option value="Software">Software — SaaS, licenses</option>
+        <option value="Hardware">Hardware — equipment supplier</option>
+        <option value="Consulting">Consulting — advisory services</option>
+        <option value="Other">Other</option>
+      </select>
+
+      <label>Contact Name</label>
+      <input type="text" name="contact_name" placeholder="e.g. John Smith">
+
+      <label>Contact Email</label>
+      <input type="email" name="contact_email" placeholder="e.g. john@supplier.com">
+
+      <label>Contract Expiry Date</label>
+      <input type="date" name="contract_expiry">
+
+      <label>Notes</label>
+      <textarea name="notes" rows="2" placeholder="Any additional notes..."></textarea>
+
+      <div class="checkbox-row">
+        <input type="checkbox" name="iso_certified" id="iso_cert">
+        <span>Supplier is ISO 27001 certified</span>
+      </div>
+      <div class="checkbox-row">
+        <input type="checkbox" name="nda_signed" id="nda">
+        <span>NDA / confidentiality agreement signed</span>
+      </div>
+      <div class="checkbox-row">
+        <input type="checkbox" name="data_access" id="data_acc">
+        <span>Supplier has access to our data</span>
+      </div>
+
+      <div class="info-box">
+        <h3>How risk is calculated</h3>
+        <p>
+          Data access: +30pts &nbsp;·&nbsp;
+          No ISO cert: +20pts &nbsp;·&nbsp;
+          No NDA: +25pts &nbsp;·&nbsp;
+          IT/Cloud/Security type: +25pts<br>
+          Score ≥60 = HIGH &nbsp;·&nbsp; ≥35 = MEDIUM &nbsp;·&nbsp; &lt;35 = LOW
+        </p>
+      </div>
+
+      <button type="submit" class="btn">Add Supplier</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Supplier Register — {{ total }} suppliers</h2>
+    {% if suppliers %}
+    <table>
+      <tr>
+        <th>Supplier</th>
+        <th>Service</th>
+        <th>Risk Score</th>
+        <th>ISO</th>
+        <th>NDA</th>
+        <th>Data Access</th>
+        <th>Contract</th>
+      </tr>
+      {% for s in suppliers %}
+      <tr>
+        <td>
+          <strong>{{ s.name }}</strong>
+          {% if s.contact_name %}
+          <br><span style="font-size:11px;color:#64748b;">{{ s.contact_name }}</span>
+          {% endif %}
+          <br><span class="badge {{ s.risk_level }}">{{ s.risk_level }}</span>
+        </td>
+        <td style="font-size:12px;">{{ s.service_type }}</td>
+        <td>
+          <strong style="color:{% if s.risk_score >= 60 %}#f87171{% elif s.risk_score >= 35 %}#fbbf24{% else %}#4ade80{% endif %};">
+            {{ s.risk_score }}/100
+          </strong>
+          <div class="score-bar">
+            <div class="score-fill" style="width:{{ s.risk_score }}%;background:{% if s.risk_score >= 60 %}#dc2626{% elif s.risk_score >= 35 %}#d97706{% else %}#16a34a{% endif %};"></div>
+          </div>
+        </td>
+        <td>
+          {% if s.iso_certified %}
+          <span class="check-yes">✓</span>
+          {% else %}
+          <span class="check-no">✗</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if s.nda_signed %}
+          <span class="check-yes">✓</span>
+          {% else %}
+          <span class="check-no">✗</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if s.data_access %}
+          <span style="color:#fbbf24;font-size:12px;">⚠ Yes</span>
+          {% else %}
+          <span style="color:#4ade80;font-size:12px;">No</span>
+          {% endif %}
+        </td>
+        <td style="font-size:11px;">
+          {% if s.contract_expiry %}
+            {% set days = (s.contract_expiry - now).days %}
+            {% if days < 0 %}
+              <span style="color:#f87171;">Expired</span>
+            {% elif days <= 30 %}
+              <span style="color:#f87171;">{{ days }}d left</span>
+            {% elif days <= 90 %}
+              <span style="color:#fbbf24;">{{ days }}d left</span>
+            {% else %}
+              <span style="color:#4ade80;">{{ s.contract_expiry.strftime('%d %b %Y') }}</span>
+            {% endif %}
+          {% else %}
+            <span style="color:#64748b;">—</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}
+    <p class="empty">No suppliers registered yet.<br>Add your first supplier using the form.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

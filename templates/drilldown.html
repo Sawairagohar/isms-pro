@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block title %}{{ data.title }} — Drill Down{% endblock %}
+{% block content %}
+<style>
+  .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:28px; padding-bottom:20px; border-bottom:1px solid #1e293b; }
+  .topbar h1 { font-size:20px; }
+  .topbar a.logout { color:#f87171; text-decoration:none; font-size:13px; margin-left:16px; }
+  .back-btn { display:inline-block; padding:8px 20px; background:#1e293b; color:#3b82f6; border:1px solid #334155; border-radius:8px; text-decoration:none; font-size:13px; margin-bottom:20px; }
+  .card { background:#1e293b; border-radius:12px; padding:24px; border:1px solid #334155; margin-bottom:20px; }
+  .card h2 { font-size:14px; color:#94a3b8; margin-bottom:16px; text-transform:uppercase; letter-spacing:0.5px; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th { text-align:left; color:#64748b; padding:8px 12px; border-bottom:1px solid #334155; font-weight:normal; font-size:12px; text-transform:uppercase; }
+  td { padding:10px 12px; border-bottom:1px solid #1a2744; color:#cbd5e1; vertical-align:top; }
+  tr:last-child td { border-bottom:none; }
+  .badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:bold; }
+  .CRITICAL { background:#7f1d1d; color:#fca5a5; }
+  .HIGH     { background:#78350f; color:#fcd34d; }
+  .MEDIUM   { background:#1e3a5f; color:#93c5fd; }
+  .LOW      { background:#14532d; color:#86efac; }
+  .Open     { background:#7f1d1d; color:#fca5a5; }
+  .Closed   { background:#14532d; color:#86efac; }
+  .Completed { background:#14532d; color:#86efac; }
+  .Pending   { background:#78350f; color:#fcd34d; }
+  .stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:20px; }
+  .stat { background:#1e293b; border-radius:10px; padding:16px; border:1px solid #334155; text-align:center; }
+  .stat .sv { font-size:32px; font-weight:bold; }
+  .stat .sl { font-size:11px; color:#64748b; margin-top:4px; }
+  .auto-tag { font-size:10px; color:#3b82f6; background:#1e3a5f; padding:2px 8px; border-radius:10px; }
+  .empty { color:#64748b; font-size:13px; padding:20px; text-align:center; }
+</style>
+
+<div class="topbar">
+  <h1>🔎 {{ data.title }} — Drill Down</h1>
+  <div style="font-size:13px;color:#64748b;">
+    {{ current_user.username }}
+    <a href="/logout" class="logout">Logout</a>
+  </div>
+</div>
+
+<a href="/compliance" class="back-btn">← Back to Compliance</a>
+
+{% if clause == "clause6" %}
+  <div class="stats-row">
+    <div class="stat"><div class="sv" style="color:#f87171;">{{ data.critical|length }}</div><div class="sl">Critical</div></div>
+    <div class="stat"><div class="sv" style="color:#fbbf24;">{{ data.high|length }}</div><div class="sl">High</div></div>
+    <div class="stat"><div class="sv" style="color:#60a5fa;">{{ data.medium|length }}</div><div class="sl">Medium</div></div>
+    <div class="stat"><div class="sv" style="color:#4ade80;">{{ data.low|length }}</div><div class="sl">Low</div></div>
+  </div>
+
+  {% if data.auto %}
+  <div class="card">
+    <h2>🤖 Auto-Detected Risks ({{ data.auto|length }})</h2>
+    <table>
+      <tr><th>Risk Name</th><th>Level</th><th>Score</th><th>Detected By</th><th>Date</th></tr>
+      {% for r in data.auto %}
+      <tr>
+        <td>{{ r.name }}</td>
+        <td><span class="badge {{ r.level }}">{{ r.level }}</span></td>
+        <td>{{ r.score }}</td>
+        <td><span class="auto-tag">{{ r.created_by }}</span></td>
+        <td style="font-size:11px;">{{ r.created_at.strftime('%d %b %Y %H:%M') }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+  {% endif %}
+
+  {% if data.critical %}
+  <div class="card">
+    <h2>🔴 Critical Risks ({{ data.critical|length }})</h2>
+    <table>
+      <tr><th>Risk Name</th><th>Owner</th><th>Score</th><th>Added By</th></tr>
+      {% for r in data.critical %}
+      <tr>
+        <td><strong>{{ r.name }}</strong>{% if r.description %}<br><span style="font-size:11px;color:#64748b;">{{ r.description[:80] }}</span>{% endif %}</td>
+        <td>{{ r.owner or '—' }}</td>
+        <td><strong style="color:#f87171;">{{ r.score }}</strong></td>
+        <td style="font-size:11px;">{{ r.created_by }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+  {% endif %}
+
+  {% if data.high %}
+  <div class="card">
+    <h2>🟠 High Risks ({{ data.high|length }})</h2>
+    <table>
+      <tr><th>Risk Name</th><th>Owner</th><th>Score</th><th>Added By</th></tr>
+      {% for r in data.high %}
+      <tr>
+        <td><strong>{{ r.name }}</strong></td>
+        <td>{{ r.owner or '—' }}</td>
+        <td><strong style="color:#fbbf24;">{{ r.score }}</strong></td>
+        <td style="font-size:11px;">{{ r.created_by }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+  {% endif %}
+
+{% elif clause == "clause7" %}
+  <div class="stats-row">
+    <div class="stat"><div class="sv" style="color:#4ade80;">{{ data.completed }}</div><div class="sl">Completed</div></div>
+    <div class="stat"><div class="sv" style="color:#fbbf24;">{{ data.pending }}</div><div class="sl">Pending</div></div>
+    <div class="stat"><div class="sv" style="color:#3b82f6;">{{ data.policies|length }}</div><div class="sl">Policies</div></div>
+    <div class="stat"><div class="sv" style="color:#94a3b8;">{{ data.training|length }}</div><div class="sl">Total Training</div></div>
+  </div>
+
+  <div class="card">
+    <h2>🎓 Training Records</h2>
+    {% if data.training %}
+    <table>
+      <tr><th>Employee</th><th>Topic</th><th>Due Date</th><th>Status</th></tr>
+      {% for t in data.training %}
+      <tr>
+        <td>{{ t.employee }}</td>
+        <td>{{ t.topic }}</td>
+        <td>{{ t.due_date or '—' }}</td>
+        <td><span class="badge {{ t.status }}">{{ t.status }}</span></td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}<p class="empty">No training records.</p>{% endif %}
+  </div>
+
+  <div class="card">
+    <h2>📁 Policy Documents</h2>
+    {% if data.policies %}
+    <table>
+      <tr><th>Title</th><th>Uploaded By</th><th>Date</th></tr>
+      {% for p in data.policies %}
+      <tr>
+        <td>{{ p.title }}</td>
+        <td>{{ p.uploaded_by }}</td>
+        <td>{{ p.uploaded_at.strftime('%d %b %Y') }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}<p class="empty">No policies uploaded.</p>{% endif %}
+  </div>
+
+{% elif clause == "clause8" %}
+  <div class="card">
+    <h2>🚨 Security Incidents</h2>
+    {% if data.incidents %}
+    <table>
+      <tr><th>Title</th><th>Severity</th><th>Status</th><th>Detected</th></tr>
+      {% for inc in data.incidents %}
+      <tr>
+        <td>{{ inc.title }}</td>
+        <td><span class="badge {{ inc.severity }}">{{ inc.severity }}</span></td>
+        <td><span class="badge {{ inc.status }}">{{ inc.status }}</span></td>
+        <td style="font-size:11px;">{{ inc.detected_at.strftime('%d %b %Y %H:%M') }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}<p class="empty">No incidents recorded.</p>{% endif %}
+  </div>
+
+  <div class="card">
+    <h2>🔍 Recent Scans</h2>
+    {% if data.scans %}
+    <table>
+      <tr><th>User</th><th>Action</th><th>Timestamp</th></tr>
+      {% for s in data.scans %}
+      <tr>
+        <td>{{ s.user }}</td>
+        <td>{{ s.action }}</td>
+        <td style="font-size:11px;">{{ s.timestamp.strftime('%d %b %Y %H:%M') }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}<p class="empty">No scans recorded.</p>{% endif %}
+  </div>
+
+{% elif clause == "clause9" %}
+  <div class="card">
+    <h2>📋 Recent Audit Log (last 30 entries)</h2>
+    <table>
+      <tr><th>User</th><th>Action</th><th>IP</th><th>Time</th></tr>
+      {% for log in data.logs %}
+      <tr>
+        <td>{% if log.user in ['AUTO-SYSTEM','AUTO-DETECTOR','CVE-WATCHER','AUTO-SCANNER'] %}<span class="auto-tag">{{ log.user }}</span>{% else %}{{ log.user }}{% endif %}</td>
+        <td>{{ log.action[:70] }}</td>
+        <td style="font-size:11px;">{{ log.ip }}</td>
+        <td style="font-size:11px;">{{ log.timestamp.strftime('%d %b %H:%M') }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+
+{% elif clause == "clause10" %}
+  <div class="card">
+    <h2>📋 Corrective Actions</h2>
+    {% if data.actions %}
+    <table>
+      <tr><th>Title</th><th>Assigned To</th><th>Due Date</th><th>Status</th></tr>
+      {% for a in data.actions %}
+      <tr>
+        <td>{{ a.title }}</td>
+        <td>{{ a.assigned_to or '—' }}</td>
+        <td>{{ a.due_date or '—' }}</td>
+        <td><span class="badge {{ a.status }}">{{ a.status }}</span></td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}<p class="empty">No corrective actions yet.</p>{% endif %}
+  </div>
+{% endif %}
+
+{% endblock %}

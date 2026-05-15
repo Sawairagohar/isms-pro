@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}Security Blog — Faseel Infosec{% endblock %}
+{% block content %}
+<style>
+  .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; padding-bottom: 20px; border-bottom: 1px solid #1e293b; }
+  .search-bar { display: flex; gap: 12px; align-items: center; margin-bottom: 24px; }
+  .search-bar input { flex: 1; padding: 10px 16px; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: #f1f5f9; font-size: 14px; outline: none; }
+  .search-bar input:focus { border-color: #3b82f6; }
+  .search-bar button { padding: 10px 20px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; }
+  .categories { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+  .cat-btn { padding: 6px 16px; border-radius: 20px; font-size: 12px; text-decoration: none; border: 1px solid #334155; color: #94a3b8; }
+  .cat-btn:hover, .cat-btn.active { background: #3b82f6; color: white; border-color: #3b82f6; }
+  .posts-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+  .post-card { background: #1e293b; border-radius: 12px; overflow: hidden; border: 1px solid #334155; text-decoration: none; display: block; transition: all 0.2s; }
+  .post-card:hover { border-color: #3b82f6; transform: translateY(-2px); }
+  .post-img { width: 100%; height: 160px; background: linear-gradient(135deg, #0d1b2e, #1e3a5f); display: flex; align-items: center; justify-content: center; font-size: 40px; }
+  .post-body { padding: 20px; }
+  .post-cat { font-size: 11px; color: #3b82f6; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .post-title { font-size: 15px; font-weight: bold; color: #f1f5f9; margin-bottom: 10px; line-height: 1.4; }
+  .post-summary { font-size: 13px; color: #94a3b8; line-height: 1.6; margin-bottom: 14px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .post-meta { font-size: 11px; color: #64748b; display: flex; justify-content: space-between; align-items: center; }
+  .auto-badge { font-size: 10px; padding: 2px 8px; background: #1e3a5f; color: #60a5fa; border-radius: 10px; }
+  .source-badge { font-size: 10px; padding: 2px 8px; background: #14532d; color: #86efac; border-radius: 10px; }
+  .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .tag { font-size: 10px; padding: 2px 8px; background: #0f172a; border-radius: 4px; color: #64748b; }
+  .stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 28px; }
+  .stat-box { background: #1e293b; border-radius: 10px; padding: 16px; border: 1px solid #334155; text-align: center; }
+  .stat-box .sv { font-size: 28px; font-weight: bold; color: #3b82f6; }
+  .stat-box .sl { font-size: 11px; color: #64748b; margin-top: 4px; }
+  .fetch-btn { padding: 10px 20px; background: #16a34a; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 13px; text-decoration: none; display: inline-block; }
+  .new-btn { padding: 10px 20px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 13px; text-decoration: none; display: inline-block; }
+  .empty { text-align: center; padding: 60px; color: #64748b; }
+  .empty .ei { font-size: 48px; margin-bottom: 16px; }
+</style>
+
+<div class="topbar">
+  <h1>Security Blog <span style="font-size:12px;color:#3b82f6;margin-left:8px;">Live cybersecurity intelligence</span></h1>
+  <div style="display:flex;gap:10px;align-items:center;">
+    {% if current_user.is_authenticated %}
+    <span style="font-size:13px;color:#64748b;">{{ current_user.username }}</span>
+    {% if current_user.role == 'admin' %}
+    <a href="/blog/fetch" class="fetch-btn">🔄 Fetch Latest News</a>
+    <a href="/blog/new" class="new-btn">✏️ Write Post</a>
+    {% endif %}
+    <a href="/logout" style="color:#f87171;text-decoration:none;font-size:13px;">Logout</a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="stats-row">
+  <div class="stat-box"><div class="sv">{{ total_posts }}</div><div class="sl">Total Articles</div></div>
+  <div class="stat-box"><div class="sv">{{ auto_posts }}</div><div class="sl">Auto-fetched</div></div>
+  <div class="stat-box"><div class="sv">{{ manual_posts }}</div><div class="sl">Written by Admin</div></div>
+  <div class="stat-box"><div class="sv">{{ categories|length }}</div><div class="sl">Categories</div></div>
+</div>
+
+<form method="GET" action="/blog">
+  <div class="search-bar">
+    <input type="text" name="q" placeholder="Search articles..." value="{{ search or '' }}">
+    <button type="submit">Search</button>
+  </div>
+</form>
+
+<div class="categories">
+  <a href="/blog" class="cat-btn {% if not selected or selected=='all' %}active{% endif %}">All</a>
+  {% for cat in categories %}
+  <a href="/blog?category={{ cat }}" class="cat-btn {% if selected==cat %}active{% endif %}">{{ cat }}</a>
+  {% endfor %}
+</div>
+
+{% if posts %}
+<div class="posts-grid">
+  {% for post in posts %}
+  <a href="/blog/{{ post.id }}" class="post-card">
+    <div class="post-img">
+      {% if post.category == 'Threat Intelligence' %}🎯
+      {% elif post.category == 'Security News' %}📰
+      {% elif post.category == 'Cybersecurity' %}🔐
+      {% elif post.category == 'Enterprise Security' %}🏢
+      {% elif post.category == 'Security Research' %}🔬
+      {% elif post.category == 'ISO 27001' %}📋
+      {% else %}🛡️{% endif %}
+    </div>
+    <div class="post-body">
+      <div class="post-cat">{{ post.category }}</div>
+      <div class="post-title">{{ post.title }}</div>
+      <div class="post-summary">{{ post.summary }}</div>
+      <div class="post-meta">
+        <span>{{ post.author }} · {{ post.created_at.strftime('%d %b %Y') }}</span>
+        <span>👁 {{ post.views }}</span>
+      </div>
+      <div class="tags">
+        {% if post.is_auto %}<span class="auto-badge">Auto-fetched</span>{% else %}<span class="source-badge">Editorial</span>{% endif %}
+        {% if post.tags %}
+          {% for tag in post.tags.split(',')[:3] %}
+          <span class="tag">{{ tag.strip() }}</span>
+          {% endfor %}
+        {% endif %}
+      </div>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty">
+  <div class="ei">📰</div>
+  <p style="font-size:16px;color:#f1f5f9;margin-bottom:8px;">No articles yet</p>
+  <p>Click "Fetch Latest News" to pull real cybersecurity articles automatically</p>
+</div>
+{% endif %}
+{% endblock %}

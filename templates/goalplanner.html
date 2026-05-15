@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Smart Goal Planner — Faseel Infosec{% endblock %}
+{% block content %}
+<style>
+  .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:28px; padding-bottom:20px; border-bottom:1px solid #1e293b; }
+  .topbar h1 { font-size:20px; }
+  .topbar a.logout { color:#f87171; text-decoration:none; font-size:13px; margin-left:16px; }
+  .target-bar { background:#1e293b; border-radius:12px; padding:24px; border:1px solid #334155; margin-bottom:24px; display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
+  .target-bar label { font-size:13px; color:#94a3b8; }
+  .target-bar input { padding:8px 14px; border-radius:8px; border:1px solid #475569; background:#0f172a; color:#f1f5f9; font-size:14px; width:80px; outline:none; }
+  .target-bar button { padding:9px 20px; background:#3b82f6; color:white; border:none; border-radius:8px; font-size:13px; cursor:pointer; font-weight:bold; }
+  .hero { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px; }
+  .hero-card { background:#1e293b; border-radius:12px; padding:20px; border:1px solid #334155; text-align:center; }
+  .hero-card .hv { font-size:36px; font-weight:bold; margin-bottom:4px; }
+  .hero-card .hl { font-size:12px; color:#64748b; text-transform:uppercase; }
+  .current-c { color:#94a3b8; }
+  .target-c  { color:#3b82f6; }
+  .projected-c { color:#4ade80; }
+  .impact-c  { color:#fbbf24; }
+  .result-box { background:#1e293b; border-radius:12px; padding:24px; border:1px solid #334155; margin-bottom:24px; }
+  .result-box.achievable { border-color:#16a34a; background:#0a1f0a; }
+  .result-box.not-achievable { border-color:#dc2626; background:#1c0a0a; }
+  .result-title { font-size:16px; font-weight:bold; margin-bottom:8px; }
+  .result-msg { font-size:14px; color:#cbd5e1; line-height:1.7; }
+  .plan-section h2 { font-size:16px; color:#f1f5f9; margin-bottom:16px; }
+  .plan-step { background:#1e293b; border-radius:10px; padding:20px; border:1px solid #334155; margin-bottom:12px; display:flex; gap:16px; align-items:flex-start; text-decoration:none; }
+  .plan-step:hover { border-color:#3b82f6; }
+  .step-num { background:#0f172a; border-radius:50%; width:36px; height:36px; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:bold; color:#3b82f6; flex-shrink:0; border:1px solid #334155; }
+  .step-body { flex:1; }
+  .step-action { font-size:14px; color:#f1f5f9; font-weight:bold; margin-bottom:6px; }
+  .step-meta { display:flex; gap:12px; flex-wrap:wrap; }
+  .step-impact { font-size:12px; color:#4ade80; }
+  .step-clause { font-size:12px; color:#3b82f6; }
+  .effort-Low    { font-size:12px; color:#86efac; background:#14532d; padding:2px 8px; border-radius:10px; }
+  .effort-Medium { font-size:12px; color:#fcd34d; background:#78350f; padding:2px 8px; border-radius:10px; }
+  .effort-High   { font-size:12px; color:#fca5a5; background:#7f1d1d; padding:2px 8px; border-radius:10px; }
+  .back-btn { display:inline-block; padding:8px 20px; background:#1e293b; color:#3b82f6; border:1px solid #334155; border-radius:8px; text-decoration:none; font-size:13px; margin-bottom:20px; }
+</style>
+
+<div class="topbar">
+  <h1>🎯 Smart Goal Planner
+    <span style="font-size:12px;color:#3b82f6;margin-left:8px;">Tell the system your target — it tells you exactly what to do</span>
+  </h1>
+  <div style="font-size:13px;color:#64748b;">
+    {{ current_user.username }}
+    <a href="/logout" class="logout">Logout</a>
+  </div>
+</div>
+
+<a href="/compliance" class="back-btn">← Back to Compliance</a>
+
+<!-- Target selector -->
+<div class="target-bar">
+  <label>I want to reach:</label>
+  <form method="GET" action="/goalplanner" style="display:flex;gap:10px;align-items:center;">
+    <input type="number" name="target" value="{{ target }}" min="1" max="100">
+    <span style="color:#64748b;font-size:14px;">% compliance</span>
+    <button type="submit">Calculate Plan</button>
+  </form>
+  <span style="color:#64748b;font-size:13px;">Try: 60%, 75%, 80%, 90%</span>
+</div>
+
+<!-- Score overview -->
+<div class="hero">
+  <div class="hero-card">
+    <div class="hv current-c">{{ plan.current }}%</div>
+    <div class="hl">Current Score</div>
+  </div>
+  <div class="hero-card">
+    <div class="hv target-c">{{ plan.target }}%</div>
+    <div class="hl">Your Target</div>
+  </div>
+  <div class="hero-card">
+    <div class="hv projected-c">{{ plan.projected }}%</div>
+    <div class="hl">If You Follow Plan</div>
+  </div>
+  <div class="hero-card">
+    <div class="hv impact-c">+{{ plan.total_impact }}%</div>
+    <div class="hl">Total Possible Gain</div>
+  </div>
+</div>
+
+<!-- Result message -->
+{% if plan.achievable %}
+<div class="result-box achievable">
+  <div class="result-title" style="color:#4ade80;">✅ Target is achievable</div>
+  <div class="result-msg">
+    Following all steps below will bring your compliance to <strong style="color:#4ade80;">{{ plan.projected }}%</strong>
+    — which exceeds your target of {{ plan.target }}%.
+    The gap is currently <strong>{{ plan.gap }}%</strong>. Follow the steps in order for maximum impact.
+  </div>
+</div>
+{% else %}
+<div class="result-box not-achievable">
+  <div class="result-title" style="color:#f87171;">⚠️ Target requires more work</div>
+  <div class="result-msg">
+    Following all steps below will bring you to <strong style="color:#fbbf24;">{{ plan.projected }}%</strong>
+    but your target is {{ plan.target }}%. You are still <strong>{{ plan.gap }}%</strong> away.
+    Complete these steps first, then set a new goal.
+  </div>
+</div>
+{% endif %}
+
+<!-- Action plan -->
+<div class="plan-section">
+  <h2>📋 Your step-by-step action plan</h2>
+  {% for step in plan.plan %}
+  <a href="{{ step.url }}" class="plan-step">
+    <div class="step-num">{{ step.step }}</div>
+    <div class="step-body">
+      <div class="step-action">{{ step.action }}</div>
+      <div class="step-meta">
+        <span class="step-impact">+{{ step.impact }}% compliance gain</span>
+        <span class="step-clause">{{ step.clause }}</span>
+        <span class="effort-{{ step.effort }}">{{ step.effort }} effort</span>
+      </div>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% endblock %}

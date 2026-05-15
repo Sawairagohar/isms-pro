@@ -58,7 +58,9 @@ cat > templates/risk.html << 'HTMLEOF'
   <a href="/policies">Policy Manager</a>
   <a href="/scan">Security Scan</a>
   <a href="/ai">AI Assessment</a>
-  {% if current_user.role in ['admin', 'auditor'] %}<a href="/auditlog">Audit Log</a>{% endif %}
+  {% if current_user.role in ['admin', 'auditor'] %}<a href="/security">Security Center</a>
+  <a href="/blog">Security Blog</a>
+  <a href="/auditlog">Audit Log</a>{% endif %}
   {% if current_user.role == 'admin' %}<a href="/admin">Admin Panel</a>{% endif %}
   <div class="role-badge">{{ current_user.role | upper }}</div>
 </div>
@@ -140,6 +142,9 @@ cat > templates/risk.html << 'HTMLEOF'
       <p class="empty">No risks added yet.<br>Use the form on the left to add your first risk.</p>
       {% endif %}
     </div>
+  </div>
+  <div style="margin-top:20px;padding:0 20px 20px;">
+    <a href="/risk/export/pdf" style="padding:10px 20px;background:#3b82f6;color:white;border-radius:8px;text-decoration:none;font-size:13px;">⬇ Export Risk Register as PDF</a>
   </div>
 </div>
 </body>

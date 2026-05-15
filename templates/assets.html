@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% block title %}Asset Inventory — Faseel Infosec{% endblock %}
+{% block content %}
+<style>
+  .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:28px; padding-bottom:20px; border-bottom:1px solid #1e293b; }
+  .topbar h1 { font-size:20px; }
+  .topbar a.logout { color:#f87171; text-decoration:none; font-size:13px; margin-left:16px; }
+  .stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px; }
+  .stat { background:#1e293b; border-radius:10px; padding:16px; border:1px solid #334155; text-align:center; }
+  .stat .sv { font-size:28px; font-weight:bold; }
+  .stat .sl { font-size:11px; color:#64748b; margin-top:4px; text-transform:uppercase; }
+  .filters { display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap; align-items:center; }
+  .filter-btn { padding:6px 16px; border-radius:20px; font-size:12px; text-decoration:none; border:1px solid #334155; color:#94a3b8; }
+  .filter-btn.active { background:#3b82f6; color:white; border-color:#3b82f6; }
+  .grid { display:grid; grid-template-columns:380px 1fr; gap:24px; align-items:start; }
+  .card { background:#1e293b; border-radius:12px; padding:24px; border:1px solid #334155; }
+  .card h2 { font-size:14px; color:#94a3b8; margin-bottom:18px; text-transform:uppercase; letter-spacing:0.5px; }
+  label { display:block; font-size:12px; color:#94a3b8; margin-bottom:5px; margin-top:13px; text-transform:uppercase; }
+  input[type=text], select, textarea { width:100%; padding:9px 12px; border-radius:8px; border:1px solid #475569; background:#0f172a; color:#f1f5f9; font-size:13px; outline:none; }
+  input[type=text]:focus, select:focus { border-color:#3b82f6; }
+  select option { background:#1e293b; }
+  .btn { margin-top:18px; width:100%; padding:11px; background:#3b82f6; color:white; border:none; border-radius:8px; font-size:14px; cursor:pointer; font-weight:bold; }
+  .btn:hover { background:#2563eb; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th { text-align:left; color:#64748b; padding:8px 12px; border-bottom:1px solid #334155; font-weight:normal; font-size:12px; text-transform:uppercase; }
+  td { padding:11px 12px; border-bottom:1px solid #1a2744; color:#cbd5e1; vertical-align:top; }
+  tr:last-child td { border-bottom:none; }
+  tr:hover td { background:#0f172a; }
+  .badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:bold; }
+  .Critical { background:#7f1d1d; color:#fca5a5; }
+  .High     { background:#78350f; color:#fcd34d; }
+  .Medium   { background:#1e3a5f; color:#93c5fd; }
+  .Low      { background:#14532d; color:#86efac; }
+  .Active   { background:#14532d; color:#86efac; }
+  .Retired  { background:#334155; color:#64748b; }
+  .Confidential { background:#7f1d1d; color:#fca5a5; }
+  .Internal     { background:#1e3a5f; color:#93c5fd; }
+  .Public       { background:#14532d; color:#86efac; }
+  .Restricted   { background:#78350f; color:#fcd34d; }
+  .btn-sm { padding:4px 12px; background:#334155; color:#f1f5f9; border:none; border-radius:6px; font-size:11px; cursor:pointer; text-decoration:none; }
+  .btn-sm:hover { background:#dc2626; color:white; }
+  .empty { color:#64748b; font-size:13px; padding:30px; text-align:center; }
+  .asset-icon { font-size:18px; margin-right:6px; }
+</style>
+
+<div class="topbar">
+  <h1>🖥️ Asset Inventory
+    <span style="font-size:12px;color:#3b82f6;margin-left:8px;">Control 5.9 — Inventory of Information Assets</span>
+  </h1>
+  <div style="font-size:13px;color:#64748b;">
+    {{ current_user.username }}
+    <a href="/logout" class="logout">Logout</a>
+  </div>
+</div>
+
+<div class="stats-row">
+  <div class="stat">
+    <div class="sv" style="color:#3b82f6;">{{ total }}</div>
+    <div class="sl">Total Assets</div>
+  </div>
+  <div class="stat">
+    <div class="sv" style="color:#f87171;">{{ critical }}</div>
+    <div class="sl">Critical Assets</div>
+  </div>
+  <div class="stat">
+    <div class="sv" style="color:#fbbf24;">{{ high }}</div>
+    <div class="sl">High Value</div>
+  </div>
+  <div class="stat">
+    <div class="sv" style="color:#4ade80;">{{ active }}</div>
+    <div class="sl">Active</div>
+  </div>
+</div>
+
+<div class="filters">
+  <span style="font-size:12px;color:#64748b;">Type:</span>
+  <a href="/assets" class="filter-btn {% if type_filter=='all' %}active{% endif %}">All</a>
+  <a href="/assets?type=Hardware" class="filter-btn {% if type_filter=='Hardware' %}active{% endif %}">Hardware</a>
+  <a href="/assets?type=Software" class="filter-btn {% if type_filter=='Software' %}active{% endif %}">Software</a>
+  <a href="/assets?type=Data" class="filter-btn {% if type_filter=='Data' %}active{% endif %}">Data</a>
+  <a href="/assets?type=People" class="filter-btn {% if type_filter=='People' %}active{% endif %}">People</a>
+  <a href="/assets?type=Service" class="filter-btn {% if type_filter=='Service' %}active{% endif %}">Service</a>
+  <span style="font-size:12px;color:#64748b;margin-left:8px;">Criticality:</span>
+  <a href="/assets?criticality=Critical" class="filter-btn {% if crit_filter=='Critical' %}active{% endif %}">Critical</a>
+  <a href="/assets?criticality=High" class="filter-btn {% if crit_filter=='High' %}active{% endif %}">High</a>
+  <a href="/assets?criticality=Medium" class="filter-btn {% if crit_filter=='Medium' %}active{% endif %}">Medium</a>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <h2>Register New Asset</h2>
+    <form method="POST">
+      <label>Asset Name</label>
+      <input type="text" name="name" placeholder="e.g. Customer Database Server" required>
+
+      <label>Asset Type</label>
+      <select name="asset_type">
+        <option value="Hardware">Hardware — servers, laptops, devices</option>
+        <option value="Software">Software — applications, systems</option>
+        <option value="Data">Data — databases, files, records</option>
+        <option value="People">People — employees, contractors</option>
+        <option value="Service">Service — cloud, SaaS, third party</option>
+        <option value="Network">Network — routers, switches, firewalls</option>
+      </select>
+
+      <label>Description</label>
+      <textarea name="description" rows="2" placeholder="What is this asset used for?"></textarea>
+
+      <label>Asset Owner</label>
+      <input type="text" name="owner" placeholder="e.g. IT Manager">
+
+      <label>Location</label>
+      <input type="text" name="location" placeholder="e.g. Server Room, AWS Cloud, Office">
+
+      <label>IP Address (if applicable)</label>
+      <input type="text" name="ip_address" placeholder="e.g. 192.168.1.10">
+
+      <label>Classification</label>
+      <select name="classification">
+        <option value="Public">Public — freely shareable</option>
+        <option value="Internal" selected>Internal — staff only</option>
+        <option value="Confidential">Confidential — restricted access</option>
+        <option value="Restricted">Restricted — top secret</option>
+      </select>
+
+      <label>Criticality</label>
+      <select name="criticality">
+        <option value="Low">Low — minimal impact if lost</option>
+        <option value="Medium" selected>Medium — moderate impact</option>
+        <option value="High">High — significant impact</option>
+        <option value="Critical">Critical — business would stop</option>
+      </select>
+
+      <button type="submit" class="btn">Register Asset</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Asset Register — {{ total }} assets</h2>
+    {% if assets %}
+    <table>
+      <tr>
+        <th>Asset</th>
+        <th>Type</th>
+        <th>Owner</th>
+        <th>Classification</th>
+        <th>Criticality</th>
+        <th>Status</th>
+        <th>Action</th>
+      </tr>
+      {% for asset in assets %}
+      <tr>
+        <td>
+          <strong>
+            {% if asset.asset_type == 'Hardware' %}🖥️
+            {% elif asset.asset_type == 'Software' %}💻
+            {% elif asset.asset_type == 'Data' %}🗄️
+            {% elif asset.asset_type == 'People' %}👤
+            {% elif asset.asset_type == 'Service' %}☁️
+            {% elif asset.asset_type == 'Network' %}🌐
+            {% endif %}
+            {{ asset.name }}
+          </strong>
+          {% if asset.ip_address %}
+          <br><span style="font-size:11px;color:#64748b;font-family:monospace;">{{ asset.ip_address }}</span>
+          {% endif %}
+          {% if asset.location %}
+          <br><span style="font-size:11px;color:#475569;">📍 {{ asset.location }}</span>
+          {% endif %}
+        </td>
+        <td style="font-size:12px;">{{ asset.asset_type }}</td>
+        <td style="font-size:12px;">{{ asset.owner or '—' }}</td>
+        <td><span class="badge {{ asset.classification }}">{{ asset.classification }}</span></td>
+        <td><span class="badge {{ asset.criticality }}">{{ asset.criticality }}</span></td>
+        <td><span class="badge {{ asset.status }}">{{ asset.status }}</span></td>
+        <td>
+          {% if asset.status == 'Active' and current_user.role == 'admin' %}
+          <a href="/assets/retire/{{ asset.id }}" class="btn-sm">Retire</a>
+          {% else %}
+          <span style="color:#64748b;font-size:11px;">—</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}
+    <p class="empty">No assets registered yet.<br>Use the form to add your first asset.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

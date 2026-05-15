@@ -71,7 +71,9 @@ cat > templates/policies.html << 'HTMLEOF'
   <a href="/policies" class="active">Policy Manager</a>
   <a href="/scan">Security Scan</a>
   <a href="/ai">AI Assessment</a>
-  {% if current_user.role in ['admin', 'auditor'] %}<a href="/auditlog">Audit Log</a>{% endif %}
+  {% if current_user.role in ['admin', 'auditor'] %}<a href="/security">Security Center</a>
+  <a href="/blog">Security Blog</a>
+  <a href="/auditlog">Audit Log</a>{% endif %}
   {% if current_user.role == 'admin' %}<a href="/admin">Admin Panel</a>{% endif %}
   <div class="role-badge">{{ current_user.role | upper }}</div>
 </div>
@@ -104,6 +106,15 @@ cat > templates/policies.html << 'HTMLEOF'
         </div>
         <div id="fileName" style="font-size:12px;color:#64748b;margin-top:6px;">No file selected</div>
 
+        <label>Document Owner</label>
+        <input type="text" name="owner" placeholder="e.g. CISO, IT Manager">
+
+        <label>Version</label>
+        <input type="text" name="version" placeholder="e.g. 1.0, 2.1">
+
+        <label>Next Review Date</label>
+        <input type="date" name="review_date">
+
         <button type="submit" class="btn">Upload Document</button>
       </form>
     </div>
@@ -115,12 +126,29 @@ cat > templates/policies.html << 'HTMLEOF'
         <div class="doc-item">
           <span class="doc-icon">📄</span>
           <div class="doc-info">
-            <div class="doc-name">{{ doc.title }}</div>
+            <div class="doc-name">{{ doc.title }}
+              {% if doc.version %}<span style="font-size:11px;color:#3b82f6;margin-left:8px;">v{{ doc.version }}</span>{% endif %}
+            </div>
             <div class="doc-meta">
               {{ doc.filename }} &nbsp;·&nbsp;
               Uploaded by <strong>{{ doc.uploaded_by }}</strong> &nbsp;·&nbsp;
-              {{ doc.uploaded_at.strftime('%d %b %Y, %H:%M') }}
+              {{ doc.uploaded_at.strftime('%d %b %Y') }}
+              {% if doc.owner %}&nbsp;·&nbsp; Owner: {{ doc.owner }}{% endif %}
             </div>
+            {% if doc.review_date %}
+              {% set days_left = (doc.review_date - now).days %}
+              {% if days_left < 0 %}
+                <div style="font-size:11px;color:#f87171;margin-top:4px;">⚠️ EXPIRED — {{ abs(days_left) }} days overdue</div>
+              {% elif days_left <= 30 %}
+                <div style="font-size:11px;color:#f87171;margin-top:4px;">🔴 Review due in {{ days_left }} days</div>
+              {% elif days_left <= 60 %}
+                <div style="font-size:11px;color:#fbbf24;margin-top:4px;">🟡 Review due in {{ days_left }} days</div>
+              {% elif days_left <= 90 %}
+                <div style="font-size:11px;color:#3b82f6;margin-top:4px;">🔵 Review due in {{ days_left }} days</div>
+              {% else %}
+                <div style="font-size:11px;color:#4ade80;margin-top:4px;">✅ Next review: {{ doc.review_date.strftime('%d %b %Y') }}</div>
+              {% endif %}
+            {% endif %}
           </div>
           <a href="/uploads/{{ doc.filename }}" class="btn-view" target="_blank">View</a>
         </div>

@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}Gap Analysis — Faseel Infosec{% endblock %}
+{% block content %}
+<style>
+  .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:28px; padding-bottom:20px; border-bottom:1px solid #1e293b; }
+  .topbar h1 { font-size:20px; }
+  .topbar a.logout { color:#f87171; text-decoration:none; font-size:13px; margin-left:16px; }
+  .readiness-banner { border-radius:16px; padding:32px; margin-bottom:24px; text-align:center; }
+  .READY      { background:linear-gradient(135deg,#0a1f0a,#0f172a); border:1px solid #16a34a; }
+  .NEARLY     { background:linear-gradient(135deg,#1c1206,#0f172a); border:1px solid #d97706; }
+  .NOT_READY  { background:linear-gradient(135deg,#1c0a0a,#0f172a); border:1px solid #dc2626; }
+  .rb-label { font-size:12px; color:#64748b; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; }
+  .rb-title { font-size:28px; font-weight:bold; margin-bottom:12px; }
+  .READY .rb-title    { color:#4ade80; }
+  .NEARLY .rb-title   { color:#fbbf24; }
+  .NOT_READY .rb-title { color:#f87171; }
+  .rb-msg { font-size:14px; color:#94a3b8; line-height:1.6; max-width:600px; margin:0 auto; }
+  .rb-date { font-size:11px; color:#334155; margin-top:12px; }
+
+  .stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px; }
+  .stat { background:#1e293b; border-radius:10px; padding:16px; border:1px solid #334155; text-align:center; }
+  .stat .sv { font-size:28px; font-weight:bold; }
+  .stat .sl { font-size:11px; color:#64748b; margin-top:4px; text-transform:uppercase; }
+
+  .section-title { font-size:16px; color:#f1f5f9; margin-bottom:16px; display:flex; align-items:center; gap:10px; }
+  .gap-card { background:#1e293b; border-radius:10px; padding:20px; border:1px solid #334155; margin-bottom:12px; display:grid; grid-template-columns:80px 1fr auto; gap:16px; align-items:start; }
+  .gap-card.CRITICAL { border-left:4px solid #dc2626; }
+  .gap-card.HIGH     { border-left:4px solid #d97706; }
+  .gap-card.MEDIUM   { border-left:4px solid #3b82f6; }
+  .gap-card.PARTIAL  { border-left:4px solid #fbbf24; }
+  .gap-clause { font-family:monospace; font-size:14px; font-weight:bold; color:#3b82f6; }
+  .gap-name { font-size:14px; font-weight:bold; color:#f1f5f9; margin-bottom:6px; }
+  .gap-finding { font-size:13px; color:#94a3b8; margin-bottom:8px; line-height:1.5; }
+  .gap-action { font-size:12px; color:#fbbf24; }
+  .gap-action::before { content:"→ "; }
+  .badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:bold; }
+  .CRITICAL-b { background:#7f1d1d; color:#fca5a5; }
+  .HIGH-b     { background:#78350f; color:#fcd34d; }
+  .MEDIUM-b   { background:#1e3a5f; color:#93c5fd; }
+  .PARTIAL-b  { background:#78350f; color:#fcd34d; }
+  .fix-btn { padding:6px 16px; background:#334155; color:#f1f5f9; border-radius:8px; font-size:12px; text-decoration:none; white-space:nowrap; }
+  .fix-btn:hover { background:#3b82f6; }
+
+  .strength-card { background:#0a1f0a; border-radius:10px; padding:16px; border:1px solid #16a34a; margin-bottom:10px; display:flex; gap:16px; align-items:center; }
+  .str-clause { font-family:monospace; font-size:13px; color:#4ade80; font-weight:bold; min-width:50px; }
+  .str-name { font-size:13px; color:#4ade80; font-weight:bold; margin-bottom:4px; }
+  .str-finding { font-size:12px; color:#86efac; }
+
+  .back-btn { display:inline-block; padding:8px 20px; background:#1e293b; color:#3b82f6; border:1px solid #334155; border-radius:8px; text-decoration:none; font-size:13px; margin-bottom:20px; }
+</style>
+
+<div class="topbar">
+  <h1>🔎 Gap Analysis Report
+    <span style="font-size:12px;color:#3b82f6;margin-left:8px;">ISO 27001 Certification Readiness</span>
+  </h1>
+  <div style="font-size:13px;color:#64748b;">
+    {{ current_user.username }}
+    <a href="/logout" class="logout">Logout</a>
+  </div>
+</div>
+
+<a href="/compliance" class="back-btn">← Back to Compliance</a>
+
+<!-- Readiness Banner -->
+<div class="readiness-banner {{ result.readiness }}">
+  <div class="rb-label">ISO 27001 Certification Readiness</div>
+  <div class="rb-title">
+    {% if result.readiness == 'READY' %}✅ AUDIT READY
+    {% elif result.readiness == 'NEARLY' %}⚠️ NEARLY READY
+    {% else %}❌ NOT READY FOR AUDIT{% endif %}
+  </div>
+  <div class="rb-msg">{{ result.readiness_msg }}</div>
+  <div class="rb-date">Generated: {{ result.generated_at }}</div>
+</div>
+
+<!-- Stats -->
+<div class="stats-row">
+  <div class="stat">
+    <div class="sv" style="color:#f87171;">{{ result.critical_gaps }}</div>
+    <div class="sl">Critical Gaps</div>
+  </div>
+  <div class="stat">
+    <div class="sv" style="color:#fbbf24;">{{ result.high_gaps }}</div>
+    <div class="sl">High Gaps</div>
+  </div>
+  <div class="stat">
+    <div class="sv" style="color:#60a5fa;">{{ result.medium_gaps }}</div>
+    <div class="sl">Medium Gaps</div>
+  </div>
+  <div class="stat">
+    <div class="sv" style="color:#4ade80;">{{ result.total_strengths }}</div>
+    <div class="sl">Strengths</div>
+  </div>
+</div>
+
+<!-- Gaps -->
+<div class="section-title">❌ Compliance Gaps ({{ result.total_gaps }})</div>
+{% for gap in result.gaps %}
+<div class="gap-card {{ gap.priority }}">
+  <div>
+    <div class="gap-clause">{{ gap.clause }}</div>
+    <span class="badge {{ gap.priority }}-b">{{ gap.priority }}</span>
+  </div>
+  <div>
+    <div class="gap-name">{{ gap.name }}</div>
+    <div class="gap-finding">{{ gap.finding }}</div>
+    <div class="gap-action">{{ gap.action }}</div>
+  </div>
+  <a href="{{ gap.url }}" class="fix-btn">Fix →</a>
+</div>
+{% endfor %}
+
+<!-- Strengths -->
+<div class="section-title" style="margin-top:32px;">✅ Compliance Strengths ({{ result.total_strengths }})</div>
+{% for strength in result.strengths %}
+<div class="strength-card">
+  <div class="str-clause">{{ strength.clause }}</div>
+  <div>
+    <div class="str-name">{{ strength.name }}</div>
+    <div class="str-finding">{{ strength.finding }}</div>
+  </div>
+</div>
+{% endfor %}
+{% endblock %}

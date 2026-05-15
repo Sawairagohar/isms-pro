@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}Internal Audit — Clause 9.2{% endblock %}
+{% block content %}
+<style>
+  .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:28px; padding-bottom:20px; border-bottom:1px solid #1e293b; }
+  .topbar h1 { font-size:20px; }
+  .btn { padding:10px 20px; border-radius:8px; font-size:13px; cursor:pointer; text-decoration:none; border:none; display:inline-block; }
+  .btn-primary { background:#3b82f6; color:white; }
+  .form-card { background:#1e293b; border-radius:12px; padding:24px; border:1px solid #334155; margin-bottom:24px; }
+  .form-card h3 { font-size:14px; font-weight:bold; margin-bottom:16px; color:#f1f5f9; }
+  .form-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .form-group { margin-bottom:16px; }
+  .form-group label { display:block; font-size:11px; color:#64748b; text-transform:uppercase; margin-bottom:6px; }
+  .form-group input, .form-group select, .form-group textarea { width:100%; padding:10px 14px; background:#0f172a; border:1px solid #334155; border-radius:8px; color:#f1f5f9; font-size:13px; outline:none; box-sizing:border-box; }
+  .audit-card { background:#1e293b; border-radius:10px; padding:20px; border:1px solid #334155; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; }
+  .audit-card.planned   { border-left:4px solid #3b82f6; }
+  .audit-card.completed { border-left:4px solid #16a34a; }
+  .audit-title { font-size:14px; font-weight:bold; color:#f1f5f9; margin-bottom:4px; }
+  .audit-meta  { font-size:12px; color:#64748b; }
+  .badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:bold; margin-right:6px; }
+  .badge-planned   { background:#1e3a5f; color:#93c5fd; }
+  .badge-completed { background:#14532d; color:#86efac; }
+  .btn-sm { padding:6px 14px; border-radius:8px; font-size:12px; cursor:pointer; text-decoration:none; border:none; background:#334155; color:#f1f5f9; margin-right:6px; }
+  .btn-view { background:#3b82f6; color:white; }
+  .empty { color:#64748b; font-size:13px; padding:40px; text-align:center; background:#1e293b; border-radius:10px; border:1px solid #334155; }
+  .stats-row { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:24px; }
+  .stat { background:#1e293b; border-radius:10px; padding:16px; border:1px solid #334155; text-align:center; }
+  .stat .sv { font-size:28px; font-weight:bold; }
+  .stat .sl { font-size:11px; color:#64748b; margin-top:4px; text-transform:uppercase; }
+</style>
+
+<div class="topbar">
+  <h1>🔍 Internal Audit Program
+    <span style="font-size:12px;color:#3b82f6;margin-left:8px;">Clause 9.2 — Internal Audit</span>
+  </h1>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% for cat, msg in messages %}
+  <div style="padding:10px 16px;border-radius:8px;margin-bottom:20px;font-size:13px;background:#14532d;color:#86efac;">{{ msg }}</div>
+  {% endfor %}
+{% endwith %}
+
+<div class="stats-row">
+  <div class="stat">
+    <div class="sv" style="color:#60a5fa;">{{ plans|length }}</div>
+    <div class="sl">Total Audits</div>
+  </div>
+  <div class="stat">
+    <div class="sv" style="color:#4ade80;">{{ plans|selectattr('status','equalto','completed')|list|length }}</div>
+    <div class="sl">Completed</div>
+  </div>
+  <div class="stat">
+    <div class="sv" style="color:#fbbf24;">{{ plans|selectattr('status','equalto','planned')|list|length }}</div>
+    <div class="sl">Planned</div>
+  </div>
+</div>
+
+<div class="form-card">
+  <h3>📋 Create New Audit Plan</h3>
+  <form method="POST">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Audit Title</label>
+        <input type="text" name="title" placeholder="e.g. Q2 2026 Internal Audit" required>
+      </div>
+      <div class="form-group">
+        <label>Audit Date</label>
+        <input type="date" name="audit_date" required>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Lead Auditor</label>
+        <input type="text" name="auditor" placeholder="e.g. John Smith" required>
+      </div>
+      <div class="form-group">
+        <label>Audit Scope</label>
+        <input type="text" name="scope" placeholder="e.g. All ISO 27001 clauses 4-10">
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary">Create Audit Plan →</button>
+  </form>
+</div>
+
+{% if plans %}
+  {% for plan in plans %}
+  <div class="audit-card {{ plan.status }}">
+    <div>
+      <div class="audit-title">
+        {{ plan.title }}
+        <span class="badge badge-{{ plan.status }}">{{ plan.status.title() }}</span>
+      </div>
+      <div class="audit-meta">
+        Auditor: {{ plan.auditor }}
+        &nbsp;·&nbsp; Date: {{ plan.audit_date.strftime('%d %b %Y') if plan.audit_date else 'TBD' }}
+        &nbsp;·&nbsp; {{ plan.findings|length }} finding(s)
+        &nbsp;·&nbsp; Created by {{ plan.created_by }}
+      </div>
+    </div>
+    <div>
+      <a href="/internalaudit/{{ plan.id }}" class="btn-sm btn-view">View →</a>
+      <a href="/internalaudit/{{ plan.id }}/report" class="btn-sm">Report</a>
+    </div>
+  </div>
+  {% endfor %}
+{% else %}
+  <div class="empty">No audit plans yet. Create your first internal audit plan above.</div>
+{% endif %}
+{% endblock %}

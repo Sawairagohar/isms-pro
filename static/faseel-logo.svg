@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 50">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#1F66D6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#38bdf8;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Shield icon -->
+  <path d="M8 4 L20 4 L20 18 Q20 26 14 30 Q8 26 8 18 Z"
+        fill="url(#grad)" opacity="0.9"/>
+  <path d="M11 14 L13 17 L18 11"
+        stroke="white" stroke-width="2" fill="none"
+        stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Company name -->
+  <text x="26" y="20" font-family="Arial" font-weight="bold"
+        font-size="16" fill="url(#grad)">FASEEL</text>
+  <text x="26" y="32" font-family="Arial" font-size="9"
+        fill="#64748b" letter-spacing="2">INFOSEC</text>
+</svg>

@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}What-If Simulator — Faseel Infosec{% endblock %}
+{% block content %}
+<style>
+  .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:28px; padding-bottom:20px; border-bottom:1px solid #1e293b; }
+  .topbar h1 { font-size:20px; }
+  .topbar a.logout { color:#f87171; text-decoration:none; font-size:13px; margin-left:16px; }
+  .grid { display:grid; grid-template-columns:340px 1fr; gap:24px; align-items:start; }
+  .card { background:#1e293b; border-radius:12px; padding:24px; border:1px solid #334155; }
+  .card h2 { font-size:14px; color:#94a3b8; margin-bottom:18px; text-transform:uppercase; letter-spacing:0.5px; }
+  label { display:block; font-size:12px; color:#94a3b8; margin-bottom:5px; margin-top:14px; text-transform:uppercase; }
+  input[type=number] { width:100%; padding:9px 12px; border-radius:8px; border:1px solid #475569; background:#0f172a; color:#f1f5f9; font-size:13px; outline:none; }
+  input[type=number]:focus { border-color:#7c3aed; }
+  .btn { margin-top:20px; width:100%; padding:11px; background:#7c3aed; color:white; border:none; border-radius:8px; font-size:14px; cursor:pointer; font-weight:bold; }
+  .btn:hover { background:#6d28d9; }
+
+  .result-hero { text-align:center; padding:32px; background:linear-gradient(135deg,#1a0a3e,#0d1b2e); border-radius:12px; border:1px solid #4c1d95; margin-bottom:24px; }
+  .result-label { font-size:12px; color:#94a3b8; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; }
+  .score-row { display:flex; justify-content:center; align-items:center; gap:32px; margin-bottom:16px; }
+  .score-box { text-align:center; }
+  .score-box .sv { font-size:56px; font-weight:bold; line-height:1; }
+  .score-box .sl { font-size:12px; color:#64748b; margin-top:4px; }
+  .current-score { color:#94a3b8; }
+  .arrow { font-size:32px; color:#7c3aed; }
+  .simulated-score { color:#a78bfa; }
+  .diff-positive { font-size:20px; color:#4ade80; font-weight:bold; }
+  .diff-negative { font-size:20px; color:#f87171; font-weight:bold; }
+
+  .breakdown { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  .breakdown-item { background:#0f172a; border-radius:8px; padding:16px; text-align:center; border:1px solid #334155; }
+  .breakdown-item .bi-label { font-size:11px; color:#64748b; margin-bottom:8px; text-transform:uppercase; }
+  .breakdown-item .bi-value { font-size:22px; font-weight:bold; color:#a78bfa; }
+
+  .hint { font-size:12px; color:#64748b; margin-top:6px; }
+  .back-btn { display:inline-block; padding:8px 20px; background:#1e293b; color:#3b82f6; border:1px solid #334155; border-radius:8px; text-decoration:none; font-size:13px; margin-bottom:20px; }
+</style>
+
+<div class="topbar">
+  <h1>🔮 What-If Simulator <span style="font-size:12px;color:#7c3aed;margin-left:8px;">See the impact before you act</span></h1>
+  <div style="font-size:13px;color:#64748b;">
+    {{ current_user.username }}
+    <a href="/logout" class="logout">Logout</a>
+  </div>
+</div>
+
+<a href="/compliance" class="back-btn">← Back to Compliance</a>
+
+<div class="grid">
+  <div class="card">
+    <h2>Simulate Fixes</h2>
+    <p style="font-size:13px;color:#64748b;margin-bottom:4px;">Adjust the sliders to see how fixing things improves your compliance score.</p>
+    <form method="GET" action="/whatif">
+      <label>Risks to treat (fix CRITICAL/HIGH)</label>
+      <input type="number" name="fix_risks" value="{{ simulation.fix_risks }}" min="0" max="50">
+      <div class="hint">e.g. enter 3 to simulate treating 3 high risks</div>
+
+      <label>Training to complete</label>
+      <input type="number" name="fix_training" value="{{ simulation.fix_training }}" min="0" max="100">
+      <div class="hint">e.g. enter 5 to simulate 5 more employees completing training</div>
+
+      <label>Policies to add</label>
+      <input type="number" name="add_policies" value="{{ simulation.add_policies }}" min="0" max="20">
+      <div class="hint">e.g. enter 2 to simulate uploading 2 more policies</div>
+
+      <label>Security scans to run</label>
+      <input type="number" name="run_scans" value="{{ simulation.run_scans }}" min="0" max="30">
+      <div class="hint">e.g. enter 4 to simulate running 4 scans this month</div>
+
+      <button type="submit" class="btn">Calculate Impact</button>
+    </form>
+  </div>
+
+  <div>
+    <div class="result-hero">
+      <div class="result-label">Compliance Score Impact</div>
+      <div class="score-row">
+        <div class="score-box">
+          <div class="sv current-score">{{ current }}%</div>
+          <div class="sl">Current Score</div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="score-box">
+          <div class="sv simulated-score">{{ simulation.simulated }}%</div>
+          <div class="sl">After Fixes</div>
+        </div>
+      </div>
+      {% set diff = simulation.simulated - current %}
+      {% if diff > 0 %}
+      <div class="diff-positive">+{{ "%.1f"|format(diff) }}% improvement</div>
+      {% elif diff < 0 %}
+      <div class="diff-negative">{{ "%.1f"|format(diff) }}% change</div>
+      {% else %}
+      <div style="color:#64748b;font-size:16px;">No change</div>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <h2>Clause-Level Impact</h2>
+      <div class="breakdown">
+        <div class="breakdown-item">
+          <div class="bi-label">Clause 6 — Risk</div>
+          <div class="bi-value">{{ simulation.c6_sim }}%</div>
+        </div>
+        <div class="breakdown-item">
+          <div class="bi-label">Clause 7 — Support</div>
+          <div class="bi-value">{{ simulation.c7_sim }}%</div>
+        </div>
+        <div class="breakdown-item">
+          <div class="bi-label">Clause 8 — Operations</div>
+          <div class="bi-value">{{ simulation.c8_sim }}%</div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;padding:14px;background:#0f172a;border-radius:8px;border-left:3px solid #7c3aed;">
+        <div style="font-size:12px;color:#64748b;margin-bottom:6px;">SIMULATION SUMMARY</div>
+        <div style="font-size:13px;color:#cbd5e1;line-height:1.7;">
+          Treating <strong style="color:#a78bfa;">{{ simulation.fix_risks }} risks</strong>,
+          completing <strong style="color:#a78bfa;">{{ simulation.fix_training }} trainings</strong>,
+          adding <strong style="color:#a78bfa;">{{ simulation.add_policies }} policies</strong>,
+          and running <strong style="color:#a78bfa;">{{ simulation.run_scans }} scans</strong>
+          would bring your score to
+          <strong style="color:#4ade80;">{{ simulation.simulated }}%</strong>.
+        </div>
+      </div>
+
+      {% if simulation.changes %}
+      <div style="margin-top:16px;">
+        <div style="font-size:12px;color:#64748b;margin-bottom:8px;text-transform:uppercase;">What changed and why:</div>
+        {% for change in simulation.changes %}
+        <div style="padding:8px 12px;background:#0f172a;border-left:3px solid #7c3aed;border-radius:4px;font-size:13px;color:#cbd5e1;margin-bottom:6px;">
+          → {{ change }}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Onboarding & Offboarding Checklists{% endblock %}
+{% block content %}
+<style>
+  .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:28px; padding-bottom:20px; border-bottom:1px solid #1e293b; }
+  .topbar h1 { font-size:20px; }
+  .stats-row { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:24px; }
+  .stat { background:#1e293b; border-radius:10px; padding:16px; border:1px solid #334155; text-align:center; }
+  .stat .sv { font-size:28px; font-weight:bold; }
+  .stat .sl { font-size:11px; color:#64748b; margin-top:4px; text-transform:uppercase; }
+  .btn { padding:10px 20px; border-radius:8px; font-size:13px; cursor:pointer; text-decoration:none; border:none; display:inline-block; }
+  .btn-primary { background:#3b82f6; color:white; }
+  .card { background:#1e293b; border-radius:10px; padding:20px; border:1px solid #334155; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; }
+  .card.onboarding { border-left:4px solid #16a34a; }
+  .card.offboarding { border-left:4px solid #dc2626; }
+  .card-title { font-size:14px; font-weight:bold; color:#f1f5f9; margin-bottom:4px; }
+  .card-meta { font-size:12px; color:#64748b; }
+  .badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:bold; margin-right:6px; }
+  .badge-on  { background:#14532d; color:#86efac; }
+  .badge-off { background:#7f1d1d; color:#fca5a5; }
+  .badge-done { background:#1e3a5f; color:#93c5fd; }
+  .badge-pending { background:#334155; color:#94a3b8; }
+  .btn-sm { padding:6px 14px; border-radius:8px; font-size:12px; cursor:pointer; text-decoration:none; border:none; background:#334155; color:#f1f5f9; }
+  .empty { color:#64748b; font-size:13px; padding:40px; text-align:center; background:#1e293b; border-radius:10px; border:1px solid #334155; }
+</style>
+
+<div class="topbar">
+  <h1>📋 Onboarding & Offboarding Checklists
+    <span style="font-size:12px;color:#3b82f6;margin-left:8px;">Clause 6.1 & 6.5 — Staff Security Checklists</span>
+  </h1>
+  <a href="/checklists/create" class="btn btn-primary">+ New Checklist</a>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% for cat, msg in messages %}
+  <div style="padding:10px 16px;border-radius:8px;margin-bottom:20px;font-size:13px;background:#14532d;color:#86efac;">{{ msg }}</div>
+  {% endfor %}
+{% endwith %}
+
+<div class="stats-row">
+  <div class="stat">
+    <div class="sv" style="color:#4ade80;">{{ checklists|selectattr('checklist_type','equalto','onboarding')|list|length }}</div>
+    <div class="sl">Onboarding</div>
+  </div>
+  <div class="stat">
+    <div class="sv" style="color:#f87171;">{{ checklists|selectattr('checklist_type','equalto','offboarding')|list|length }}</div>
+    <div class="sl">Offboarding</div>
+  </div>
+  <div class="stat">
+    <div class="sv" style="color:#60a5fa;">{{ checklists|selectattr('completed','equalto',true)|list|length }}</div>
+    <div class="sl">Completed</div>
+  </div>
+</div>
+
+{% if checklists %}
+  {% for c in checklists %}
+  <div class="card {{ c.checklist_type }}">
+    <div>
+      <div class="card-title">
+        {% if c.checklist_type == 'onboarding' %}🟢{% else %}🔴{% endif %}
+        {{ c.username }}
+        <span class="badge {% if c.checklist_type=='onboarding' %}badge-on{% else %}badge-off{% endif %}">
+          {{ c.checklist_type.title() }}
+        </span>
+        <span class="badge {% if c.completed %}badge-done{% else %}badge-pending{% endif %}">
+          {% if c.completed %}Complete{% else %}Pending{% endif %}
+        </span>
+      </div>
+      <div class="card-meta">
+        Created by {{ c.created_by }} &nbsp;·&nbsp; {{ c.created_at.strftime('%d %b %Y %H:%M') }}
+      </div>
+    </div>
+    <a href="/checklists/{{ c.id }}" class="btn-sm">View Checklist →</a>
+  </div>
+  {% endfor %}
+{% else %}
+  <div class="empty">No checklists yet. <a href="/checklists/create" style="color:#3b82f6;">Create your first checklist.</a></div>
+{% endif %}
+{% endblock %}

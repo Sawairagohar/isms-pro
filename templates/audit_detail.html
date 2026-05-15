@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+{% block title %}Audit Detail — {{ plan.title }}{% endblock %}
+{% block content %}
+<style>
+  .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:28px; padding-bottom:20px; border-bottom:1px solid #1e293b; }
+  .topbar h1 { font-size:20px; }
+  .btn { padding:10px 20px; border-radius:8px; font-size:13px; cursor:pointer; text-decoration:none; border:none; display:inline-block; }
+  .btn-primary { background:#3b82f6; color:white; }
+  .btn-success { background:#16a34a; color:white; }
+  .btn-back { background:#334155; color:#f1f5f9; }
+  .info-card { background:#1e293b; border-radius:12px; padding:20px; border:1px solid #334155; margin-bottom:24px; display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+  .info-item .il { font-size:11px; color:#64748b; text-transform:uppercase; margin-bottom:4px; }
+  .info-item .iv { font-size:14px; color:#f1f5f9; font-weight:bold; }
+  .form-card { background:#1e293b; border-radius:12px; padding:24px; border:1px solid #334155; margin-bottom:24px; }
+  .form-card h3 { font-size:14px; font-weight:bold; margin-bottom:16px; color:#f1f5f9; }
+  .form-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .form-group { margin-bottom:16px; }
+  .form-group label { display:block; font-size:11px; color:#64748b; text-transform:uppercase; margin-bottom:6px; }
+  .form-group input, .form-group select, .form-group textarea { width:100%; padding:10px 14px; background:#0f172a; border:1px solid #334155; border-radius:8px; color:#f1f5f9; font-size:13px; outline:none; box-sizing:border-box; }
+  .finding-card { background:#1e293b; border-radius:10px; padding:18px 20px; border:1px solid #334155; margin-bottom:10px; }
+  .finding-card.critical { border-left:4px solid #dc2626; }
+  .finding-card.high     { border-left:4px solid #d97706; }
+  .finding-card.medium   { border-left:4px solid #fbbf24; }
+  .finding-card.low      { border-left:4px solid #16a34a; }
+  .finding-card.closed   { opacity:0.6; border-left:4px solid #475569; }
+  .finding-title { font-size:14px; font-weight:bold; color:#f1f5f9; margin-bottom:6px; }
+  .finding-meta  { font-size:12px; color:#64748b; margin-bottom:8px; }
+  .finding-detail { font-size:13px; color:#94a3b8; margin-bottom:6px; }
+  .badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:bold; margin-right:6px; }
+  .badge-critical { background:#7f1d1d; color:#fca5a5; }
+  .badge-high     { background:#78350f; color:#fcd34d; }
+  .badge-medium   { background:#713f12; color:#fde68a; }
+  .badge-low      { background:#14532d; color:#86efac; }
+  .badge-open     { background:#1e3a5f; color:#93c5fd; }
+  .badge-closed   { background:#334155; color:#94a3b8; }
+  .btn-sm { padding:6px 14px; border-radius:8px; font-size:12px; cursor:pointer; text-decoration:none; border:none; background:#334155; color:#f1f5f9; }
+  .btn-close { background:#16a34a; color:white; }
+  .section-title { font-size:15px; font-weight:bold; margin-bottom:12px; margin-top:24px; }
+  .auto-risk-note { font-size:11px; color:#f87171; margin-top:6px; }
+</style>
+
+<div class="topbar">
+  <h1>🔍 {{ plan.title }}
+    <span style="font-size:12px;color:#3b82f6;margin-left:8px;">Clause 9.2 — Internal Audit</span>
+  </h1>
+  <div>
+    <a href="/internalaudit" class="btn btn-back" style="margin-right:8px;">← Back</a>
+    <a href="/internalaudit/{{ plan.id }}/report" class="btn btn-primary" style="margin-right:8px;">📄 Generate Report</a>
+    {% if plan.status != 'completed' %}
+    <form method="POST" style="display:inline;">
+      <input type="hidden" name="action" value="complete">
+      <button type="submit" class="btn btn-success">✓ Mark Complete</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% for cat, msg in messages %}
+  <div style="padding:10px 16px;border-radius:8px;margin-bottom:20px;font-size:13px;background:#14532d;color:#86efac;">{{ msg }}</div>
+  {% endfor %}
+{% endwith %}
+
+<div class="info-card">
+  <div class="info-item">
+    <div class="il">Auditor</div>
+    <div class="iv">{{ plan.auditor }}</div>
+  </div>
+  <div class="info-item">
+    <div class="il">Audit Date</div>
+    <div class="iv">{{ plan.audit_date.strftime('%d %b %Y') if plan.audit_date else 'TBD' }}</div>
+  </div>
+  <div class="info-item">
+    <div class="il">Status</div>
+    <div class="iv" style="color:{% if plan.status=='completed' %}#4ade80{% else %}#60a5fa{% endif %};">
+      {{ plan.status.title() }}
+    </div>
+  </div>
+  <div class="info-item">
+    <div class="il">Total Findings</div>
+    <div class="iv">{{ plan.findings|length }}</div>
+  </div>
+  <div class="info-item">
+    <div class="il">Open</div>
+    <div class="iv" style="color:#f87171;">{{ open_findings|length }}</div>
+  </div>
+  <div class="info-item">
+    <div class="il">Closed</div>
+    <div class="iv" style="color:#4ade80;">{{ closed_findings|length }}</div>
+  </div>
+  <div class="info-item">
+    <div class="il">Scope</div>
+    <div class="iv" style="font-size:12px;">{{ plan.scope or 'All clauses' }}</div>
+  </div>
+  <div class="info-item">
+    <div class="il">Created By</div>
+    <div class="iv">{{ plan.created_by }}</div>
+  </div>
+</div>
+
+{% if plan.status != 'completed' %}
+<div class="form-card">
+  <h3>➕ Add Audit Finding</h3>
+  <form method="POST">
+    <input type="hidden" name="action" value="add_finding">
+    <div class="form-row">
+      <div class="form-group">
+        <label>ISO Clause</label>
+        <select name="clause" required>
+          <option value="">— Select Clause —</option>
+          {% for c in clauses %}
+          <option value="{{ c }}">{{ c }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Severity</label>
+        <select name="severity" required>
+          <option value="low">Low</option>
+          <option value="medium">Medium</option>
+          <option value="high">High</option>
+          <option value="critical">Critical</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Finding</label>
+      <textarea name="finding" rows="2" placeholder="Describe what was found during the audit..." required></textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Root Cause</label>
+        <textarea name="root_cause" rows="2" placeholder="Why did this happen?"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Required Action</label>
+        <textarea name="action_required" rows="2" placeholder="What needs to be done to fix this?"></textarea>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Due Date</label>
+      <input type="date" name="due_date">
+    </div>
+    <button type="submit" class="btn btn-primary">Add Finding</button>
+    <span class="auto-risk-note">⚠ Critical and High findings automatically create risks in your risk register</span>
+  </form>
+</div>
+{% endif %}
+
+{% if open_findings %}
+<div class="section-title" style="color:#f87171;">🔴 Open Findings ({{ open_findings|length }})</div>
+{% for f in open_findings %}
+<div class="finding-card {{ f.severity }}">
+  <div class="finding-title">
+    <span class="badge badge-{{ f.severity }}">{{ f.severity.upper() }}</span>
+    <span class="badge badge-open">OPEN</span>
+    {{ f.clause }}
+  </div>
+  <div class="finding-detail">{{ f.finding }}</div>
+  {% if f.root_cause %}
+  <div class="finding-detail"><strong style="color:#64748b;">Root Cause:</strong> {{ f.root_cause }}</div>
+  {% endif %}
+  {% if f.action %}
+  <div class="finding-detail"><strong style="color:#64748b;">Required Action:</strong> {{ f.action }}</div>
+  {% endif %}
+  <div class="finding-meta">
+    Due: {{ f.due_date.strftime('%d %b %Y') if f.due_date else 'No date set' }}
+    &nbsp;·&nbsp; Added: {{ f.created_at.strftime('%d %b %Y') }}
+  </div>
+  <form method="POST" style="display:inline;">
+    <input type="hidden" name="action" value="close_finding">
+    <input type="hidden" name="finding_id" value="{{ f.id }}">
+    <button type="submit" class="btn-sm btn-close">✓ Close Finding</button>
+  </form>
+</div>
+{% endfor %}
+{% endif %}
+
+{% if closed_findings %}
+<div class="section-title" style="color:#4ade80;">✅ Closed Findings ({{ closed_findings|length }})</div>
+{% for f in closed_findings %}
+<div class="finding-card closed">
+  <div class="finding-title">
+    <span class="badge badge-{{ f.severity }}">{{ f.severity.upper() }}</span>
+    <span class="badge badge-closed">CLOSED</span>
+    {{ f.clause }}
+  </div>
+  <div class="finding-detail">{{ f.finding }}</div>
+  <div class="finding-meta">Closed &nbsp;·&nbsp; Added: {{ f.created_at.strftime('%d %b %Y') }}</div>
+</div>
+{% endfor %}
+{% endif %}
+
+{% if not plan.findings %}
+<div style="color:#64748b;font-size:13px;padding:40px;text-align:center;background:#1e293b;border-radius:10px;border:1px solid #334155;">
+  No findings recorded yet. Add your first finding above.
+</div>
+{% endif %}
+{% endblock %}

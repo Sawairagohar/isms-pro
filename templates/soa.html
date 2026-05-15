@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% block title %}Statement of Applicability — Faseel Infosec{% endblock %}
+{% block content %}
+<style>
+  .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:28px; padding-bottom:20px; border-bottom:1px solid #1e293b; }
+  .topbar h1 { font-size:20px; }
+  .topbar a.logout { color:#f87171; text-decoration:none; font-size:13px; margin-left:16px; }
+  .stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px; }
+  .stat { background:#1e293b; border-radius:10px; padding:16px; border:1px solid #334155; text-align:center; }
+  .stat .sv { font-size:28px; font-weight:bold; }
+  .stat .sl { font-size:11px; color:#64748b; margin-top:4px; text-transform:uppercase; }
+  .filters { display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap; }
+  .filter-btn { padding:6px 16px; border-radius:20px; font-size:12px; text-decoration:none; border:1px solid #334155; color:#94a3b8; }
+  .filter-btn.active { background:#3b82f6; color:white; border-color:#3b82f6; }
+  .card { background:#1e293b; border-radius:12px; border:1px solid #334155; overflow:hidden; margin-bottom:20px; }
+  .theme-header { padding:14px 20px; background:#0d1b2e; border-bottom:1px solid #334155; font-size:13px; font-weight:bold; color:#3b82f6; display:flex; justify-content:space-between; }
+  .control-row { padding:14px 20px; border-bottom:1px solid #1a2744; display:grid; grid-template-columns:60px 1fr 100px 110px 120px; gap:12px; align-items:center; font-size:13px; }
+  .control-row:last-child { border-bottom:none; }
+  .control-row:hover { background:#0f172a; }
+  .ctrl-id { font-family:monospace; color:#3b82f6; font-weight:bold; font-size:12px; }
+  .ctrl-name { color:#cbd5e1; }
+  .badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:bold; }
+  .impl { background:#14532d; color:#86efac; }
+  .gap  { background:#7f1d1d; color:#fca5a5; }
+  .na   { background:#334155; color:#64748b; }
+  .edit-btn { padding:4px 12px; background:#334155; color:#f1f5f9; border:none; border-radius:6px; font-size:11px; cursor:pointer; }
+  .edit-btn:hover { background:#3b82f6; }
+  .progress-bar { background:#0f172a; border-radius:20px; height:8px; overflow:hidden; margin-top:8px; }
+  .progress-fill { height:8px; border-radius:20px; background:#3b82f6; }
+  
+  /* Modal */
+  .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000; justify-content:center; align-items:center; }
+  .modal.show { display:flex; }
+  .modal-box { background:#1e293b; border-radius:12px; padding:28px; border:1px solid #334155; width:500px; max-width:90%; }
+  .modal-box h3 { font-size:16px; color:#f1f5f9; margin-bottom:20px; }
+  .modal-box label { display:block; font-size:12px; color:#94a3b8; margin-bottom:5px; margin-top:12px; text-transform:uppercase; }
+  .modal-box textarea, .modal-box select { width:100%; padding:9px 12px; border-radius:8px; border:1px solid #475569; background:#0f172a; color:#f1f5f9; font-size:13px; outline:none; }
+  .modal-box select option { background:#1e293b; }
+  .modal-actions { display:flex; gap:10px; margin-top:20px; }
+  .save-btn { padding:10px 24px; background:#3b82f6; color:white; border:none; border-radius:8px; font-size:13px; cursor:pointer; font-weight:bold; }
+  .cancel-btn { padding:10px 24px; background:#334155; color:#f1f5f9; border:none; border-radius:8px; font-size:13px; cursor:pointer; }
+</style>
+
+<div class="topbar">
+  <h1>📋 Statement of Applicability
+    <span style="font-size:12px;color:#3b82f6;margin-left:8px;">All 93 ISO 27001 Annex A Controls</span>
+  </h1>
+  <div style="font-size:13px;color:#64748b;">
+    {{ current_user.username }}
+    <a href="/logout" class="logout">Logout</a>
+  </div>
+</div>
+
+<div class="stats-row">
+  <div class="stat">
+    <div class="sv" style="color:#3b82f6;">{{ total }}</div>
+    <div class="sl">Total Controls</div>
+  </div>
+  <div class="stat">
+    <div class="sv" style="color:#fbbf24;">{{ applicable }}</div>
+    <div class="sl">Applicable</div>
+  </div>
+  <div class="stat">
+    <div class="sv" style="color:#4ade80;">{{ implemented }}</div>
+    <div class="sl">Implemented</div>
+  </div>
+  <div class="stat">
+    <div class="sv" style="color:#f87171;">{{ gaps }}</div>
+    <div class="sl">Gaps</div>
+    <div class="progress-bar"><div class="progress-fill" style="width:{{ coverage }}%"></div></div>
+    <div style="font-size:10px;color:#64748b;margin-top:4px;">{{ coverage }}% coverage</div>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="filters">
+  <span style="font-size:12px;color:#64748b;padding:6px 0;">Filter by theme:</span>
+  <a href="/soa" class="filter-btn {% if theme_filter=='all' %}active{% endif %}">All</a>
+  <a href="/soa?theme=Organizational" class="filter-btn {% if theme_filter=='Organizational' %}active{% endif %}">Organizational</a>
+  <a href="/soa?theme=People" class="filter-btn {% if theme_filter=='People' %}active{% endif %}">People</a>
+  <a href="/soa?theme=Physical" class="filter-btn {% if theme_filter=='Physical' %}active{% endif %}">Physical</a>
+  <a href="/soa?theme=Technological" class="filter-btn {% if theme_filter=='Technological' %}active{% endif %}">Technological</a>
+  <span style="font-size:12px;color:#64748b;padding:6px 0;margin-left:10px;">Status:</span>
+  <a href="/soa?status=implemented" class="filter-btn {% if status_filter=='implemented' %}active{% endif %}">Implemented</a>
+  <a href="/soa?status=gap" class="filter-btn {% if status_filter=='gap' %}active{% endif %}">Gaps Only</a>
+  <a href="/soa?status=na" class="filter-btn {% if status_filter=='na' %}active{% endif %}">Not Applicable</a>
+</div>
+
+<!-- Controls table -->
+{% set current_theme = "" %}
+{% for control in controls %}
+  {% if control.theme != current_theme %}
+    {% if not loop.first %}</div>{% endif %}
+    <div class="card">
+    <div class="theme-header">
+      <span>{{ control.theme }} Controls</span>
+      <span style="color:#64748b;font-size:12px;">Theme {{ control.control_id[0] }}</span>
+    </div>
+    {% set current_theme = control.theme %}
+  {% endif %}
+  
+  <div class="control-row">
+    <span class="ctrl-id">{{ control.control_id }}</span>
+    <span class="ctrl-name">{{ control.control_name }}</span>
+    <span>
+      {% if not control.applicable %}
+        <span class="badge na">N/A</span>
+      {% elif control.implemented %}
+        <span class="badge impl">✓ Done</span>
+      {% else %}
+        <span class="badge gap">Gap</span>
+      {% endif %}
+    </span>
+    <span style="font-size:11px;color:#64748b;">
+      {% if control.evidence %}📎 Evidence{% else %}—{% endif %}
+    </span>
+    {% if current_user.role == 'admin' %}
+    <button class="edit-btn" onclick="openModal('{{ control.control_id }}', '{{ control.control_name }}', {{ 'true' if control.applicable else 'false' }}, {{ 'true' if control.implemented else 'false' }}, `{{ control.justification or '' }}`, `{{ control.evidence or '' }}`)">Edit</button>
+    {% else %}
+    <span style="font-size:11px;color:#475569;">Read only</span>
+    {% endif %}
+  </div>
+{% endfor %}
+</div>
+
+<!-- Edit Modal -->
+<div class="modal" id="editModal">
+  <div class="modal-box">
+    <h3>Update Control — <span id="modal-id"></span></h3>
+    <form method="POST" action="/soa">
+      <input type="hidden" name="control_id" id="modal-control-id">
+      
+      <label>Applicable</label>
+      <select name="applicable" id="modal-applicable">
+        <option value="true">Yes — applicable to our organization</option>
+        <option value="false">No — not applicable (excluded)</option>
+      </select>
+      
+      <label>Implementation Status</label>
+      <select name="implemented" id="modal-implemented">
+        <option value="false">Not implemented (Gap)</option>
+        <option value="true">Implemented ✓</option>
+      </select>
+      
+      <label>Justification</label>
+      <textarea name="justification" id="modal-justification" rows="3" placeholder="Why included/excluded or how it's implemented..."></textarea>
+      
+      <label>Evidence Reference</label>
+      <textarea name="evidence" id="modal-evidence" rows="2" placeholder="e.g. Policy doc v1.2, Scan report 2026-05-10..."></textarea>
+      
+      <div class="modal-actions">
+        <button type="submit" class="save-btn">Save Changes</button>
+        <button type="button" class="cancel-btn" onclick="closeModal()">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openModal(id, name, applicable, implemented, justification, evidence) {
+  document.getElementById('modal-id').textContent = id + ' — ' + name;
+  document.getElementById('modal-control-id').value = id;
+  document.getElementById('modal-applicable').value = applicable ? 'true' : 'false';
+  document.getElementById('modal-implemented').value = implemented ? 'true' : 'false';
+  document.getElementById('modal-justification').value = justification;
+  document.getElementById('modal-evidence').value = evidence;
+  document.getElementById('editModal').classList.add('show');
+}
+function closeModal() {
+  document.getElementById('editModal').classList.remove('show');
+}
+document.getElementById('editModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+</script>
+{% endblock %}

@@ -49,7 +49,9 @@ cat > ~/isms-pro/templates/scan.html << 'HTMLEOF'
   <a href="/training">Training Tracker</a>
   <a href="/policies">Policy Manager</a>
   <a href="/scan" class="active">Security Scan</a>
-  {% if current_user.role in ['admin', 'auditor'] %}<a href="/auditlog">Audit Log</a>{% endif %}
+  {% if current_user.role in ['admin', 'auditor'] %}<a href="/security">Security Center</a>
+  <a href="/blog">Security Blog</a>
+  <a href="/auditlog">Audit Log</a>{% endif %}
   {% if current_user.role == 'admin' %}<a href="/admin">Admin Panel</a>{% endif %}
   <div class="role-badge">{{ current_user.role | upper }}</div>
 </div>

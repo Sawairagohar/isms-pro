@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Incident Management — Faseel Infosec{% endblock %}
+{% block content %}
+<style>
+  .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:28px; padding-bottom:20px; border-bottom:1px solid #1e293b; }
+  .topbar h1 { font-size:20px; }
+  .topbar a.logout { color:#f87171; text-decoration:none; font-size:13px; margin-left:16px; }
+  .grid { display:grid; grid-template-columns:360px 1fr; gap:24px; align-items:start; }
+  .card { background:#1e293b; border-radius:12px; padding:24px; border:1px solid #334155; }
+  .card h2 { font-size:14px; color:#94a3b8; margin-bottom:18px; text-transform:uppercase; letter-spacing:0.5px; }
+  label { display:block; font-size:12px; color:#94a3b8; margin-bottom:5px; margin-top:13px; text-transform:uppercase; }
+  input[type=text], select, textarea { width:100%; padding:9px 12px; border-radius:8px; border:1px solid #475569; background:#0f172a; color:#f1f5f9; font-size:13px; outline:none; }
+  select option { background:#1e293b; }
+  .btn { margin-top:18px; width:100%; padding:11px; background:#dc2626; color:white; border:none; border-radius:8px; font-size:14px; cursor:pointer; font-weight:bold; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th { text-align:left; color:#64748b; padding:8px 12px; border-bottom:1px solid #334155; font-weight:normal; font-size:12px; text-transform:uppercase; }
+  td { padding:10px 12px; border-bottom:1px solid #1a2744; color:#cbd5e1; vertical-align:top; }
+  .badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:bold; }
+  .CRITICAL { background:#7f1d1d; color:#fca5a5; }
+  .HIGH     { background:#78350f; color:#fcd34d; }
+  .MEDIUM   { background:#1e3a5f; color:#93c5fd; }
+  .LOW      { background:#14532d; color:#86efac; }
+  .Open     { background:#7f1d1d; color:#fca5a5; }
+  .Closed   { background:#14532d; color:#86efac; }
+  .btn-sm { padding:4px 12px; background:#16a34a; color:white; border:none; border-radius:6px; font-size:12px; cursor:pointer; text-decoration:none; }
+  .empty { color:#64748b; font-size:13px; padding:30px; text-align:center; }
+</style>
+
+<div class="topbar">
+  <h1>🚨 Incident Management
+    <span style="font-size:12px;color:#3b82f6;margin-left:8px;">Clause 8 — Operations</span>
+  </h1>
+  <div style="font-size:13px;color:#64748b;">
+    {{ current_user.username }}
+    <a href="/logout" class="logout">Logout</a>
+  </div>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% for cat, msg in messages %}
+  <div style="padding:10px 16px;border-radius:8px;margin-bottom:20px;font-size:13px;background:#14532d;color:#86efac;">{{ msg }}</div>
+  {% endfor %}
+{% endwith %}
+
+<div class="grid">
+  <div class="card">
+    <h2>Raise New Incident</h2>
+    <form method="POST">
+      <label>Incident Title</label>
+      <input type="text" name="title" placeholder="e.g. Ransomware detected" required>
+      <label>Description</label>
+      <textarea name="description" rows="3" placeholder="What happened? When? What systems affected?"></textarea>
+      <label>Severity</label>
+      <select name="severity">
+        <option value="CRITICAL">CRITICAL — Active attack / data breach</option>
+        <option value="HIGH">HIGH — Significant threat detected</option>
+        <option value="MEDIUM" selected>MEDIUM — Suspicious activity</option>
+        <option value="LOW">LOW — Minor security event</option>
+      </select>
+      <label>Assigned To</label>
+      <input type="text" name="assigned_to" placeholder="e.g. IT Security Team">
+      <label>Related Annex A Controls</label>
+      <input type="text" name="annex_controls" placeholder="e.g. 8.15, 8.16, 5.26">
+      <button type="submit" class="btn">Raise Incident</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Incident Register — {{ incidents|length }} incidents</h2>
+    {% if incidents %}
+    <table>
+      <tr><th>Title</th><th>Severity</th><th>Status</th><th>Detected</th><th>Action</th></tr>
+      {% for inc in incidents %}
+      <tr>
+        <td><strong>{{ inc.title }}</strong>
+          {% if inc.annex_controls %}<br><span style="font-size:11px;color:#3b82f6;">{{ inc.annex_controls }}</span>{% endif %}
+        </td>
+        <td><span class="badge {{ inc.severity }}">{{ inc.severity }}</span></td>
+        <td><span class="badge {{ inc.status }}">{{ inc.status }}</span></td>
+        <td style="font-size:11px;">{{ inc.detected_at.strftime('%d %b %Y %H:%M') }}</td>
+        <td>
+          {% if inc.status == 'Open' %}
+          <a href="/incidents/close/{{ inc.id }}" class="btn-sm">Close</a>
+          {% else %}
+          <span style="color:#64748b;font-size:12px;">✓ Done</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}
+    <p class="empty">No incidents recorded yet.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

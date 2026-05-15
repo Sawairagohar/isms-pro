@@ -78,7 +78,9 @@ cat > ~/isms-pro/templates/ai.html << 'HTMLEOF'
   <a href="/ai">AI Assessment</a>
   <a href="/graphs">Analytics</a>
   <a href="/ai" class="active">AI Assessment</a>
-  {% if current_user.role in ['admin', 'auditor'] %}<a href="/auditlog">Audit Log</a>{% endif %}
+  {% if current_user.role in ['admin', 'auditor'] %}<a href="/security">Security Center</a>
+  <a href="/blog">Security Blog</a>
+  <a href="/auditlog">Audit Log</a>{% endif %}
   {% if current_user.role == 'admin' %}<a href="/admin">Admin Panel</a>{% endif %}
   <div class="role-badge">{{ current_user.role | upper }}</div>
 </div>

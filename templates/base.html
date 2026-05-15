@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>{% block title %}Faseel Infosec — ISMS Platform{% endblock %}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: #0f172a; color: #f1f5f9; display: flex; min-height: 100vh; }
+
+    /* Sidebar */
+    .sidebar { width: 240px; min-width: 240px; background: #0d1b2e; padding: 0; border-right: 1px solid #1e3a5f; position: fixed; top: 0; left: 0; height: 100vh; z-index: 10; overflow-y: auto; display: flex; flex-direction: column; }
+
+    /* Logo area */
+    .sidebar-logo { padding: 20px; border-bottom: 1px solid #1e3a5f; background: #071120; }
+    .sidebar-logo img { width: 120px; display: block; margin-bottom: 6px; }
+    .sidebar-logo .tagline { font-size: 10px; color: #3b82f6; text-transform: uppercase; letter-spacing: 1px; }
+    .sidebar-logo .platform-name { font-size: 12px; color: #64748b; margin-top: 2px; }
+
+    /* Nav */
+    .sidebar-nav { padding: 12px 0; flex: 1; }
+    .nav-section { padding: 8px 16px 4px; font-size: 10px; color: #334155; text-transform: uppercase; letter-spacing: 1px; margin-top: 8px; }
+    .sidebar a { display: flex; align-items: center; gap: 10px; padding: 9px 20px; color: #64748b; text-decoration: none; font-size: 13px; border-left: 3px solid transparent; transition: all 0.15s; }
+    .sidebar a:hover, .sidebar a.active { color: #f1f5f9; background: #0f172a; border-left-color: #3b82f6; }
+    .sidebar a .icon { font-size: 15px; width: 18px; text-align: center; }
+
+    /* Role badge */
+    .role-badge { margin: 12px 16px; padding: 8px 12px; background: #071120; border-radius: 8px; border: 1px solid #1e3a5f; }
+    .role-badge .rb-name { font-size: 13px; color: #f1f5f9; font-weight: bold; }
+    .role-badge .rb-role { font-size: 11px; color: #3b82f6; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+
+    /* Powered by */
+    .sidebar-footer { padding: 12px 16px; border-top: 1px solid #1e3a5f; }
+    .sidebar-footer .powered { font-size: 10px; color: #334155; }
+    .sidebar-footer .powered span { color: #3b82f6; }
+
+    /* Main */
+    .main { margin-left: 240px; padding: 28px 32px; flex: 1; width: calc(100% - 240px); }
+
+    /* Topbar */
+    .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; padding-bottom: 20px; border-bottom: 1px solid #1e293b; }
+    .topbar h1 { font-size: 20px; color: #f1f5f9; }
+    .topbar .sub { font-size: 12px; color: #3b82f6; margin-left: 10px; font-weight: normal; }
+    .topbar a.logout { color: #f87171; text-decoration: none; font-size: 13px; margin-left: 16px; }
+
+    /* Flash messages */
+    .flash { padding: 10px 16px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; }
+    .flash.success { background: #14532d; color: #86efac; }
+    .flash.danger  { background: #7f1d1d; color: #fca5a5; }
+    .flash.info    { background: #1e3a5f; color: #93c5fd; }
+    .nav-section { font-size:10px; color:#475569; text-transform:uppercase; letter-spacing:1px; padding:16px 20px 4px; font-weight:bold; }
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <img src="/static/faseel-logo.svg" alt="Faseel Infosec">
+    <div class="tagline">Cybersecurity Services</div>
+    <div class="platform-name">ISMS Automation Platform</div>
+  </div>
+
+  <div class="sidebar-nav">
+    <div class="nav-section">Main</div>
+    <a href="/dashboard" class="{% if request.path=='/dashboard' %}active{% endif %}">
+      <span class="icon">📊</span> Dashboard
+    </a>
+
+    <div class="nav-section">ISMS Controls</div>
+    <a href="/risk" class="{% if request.path=='/risk' %}active{% endif %}">
+      <span class="icon">⚠️</span> Risk Management
+    </a>
+    <a href="/training" class="{% if request.path=='/training' %}active{% endif %}">
+      <span class="icon">🎓</span> Training Tracker
+    </a>
+    <a href="/policies" class="{% if request.path=='/policies' %}active{% endif %}">
+      <span class="icon">📁</span> Policy Manager
+    </a>
+
+    <div class="nav-section">Security</div>
+    <a href="/scan" class="{% if request.path=='/scan' %}active{% endif %}">
+      <span class="icon">🔍</span> Security Scan
+    </a>
+    <a href="/ai" class="{% if request.path=='/ai' %}active{% endif %}">
+      <span class="icon">🤖</span> AI Assessment
+    </a>
+    <a href="/security" class="{% if request.path=='/security' %}active{% endif %}">
+      <span class="icon">🛡️</span> Security Center
+    </a>
+
+    <div class="nav-section">ISMS Controls</div>
+    <a href="/assets" class="{% if request.path=='/assets' %}active{% endif %}">
+      <span class="icon">🖥️</span> Asset Inventory
+    </a>
+    <a href="/suppliers" class="{% if request.path=='/suppliers' %}active{% endif %}">
+      <span class="icon">🤝</span> Supplier Risk
+    </a>
+    <div class="nav-section">Compliance</div>
+    <a href="/soa" class="{% if request.path=='/soa' %}active{% endif %}">
+      <span class="icon">📋</span> SoA — 93 Controls
+    </a>
+    <a href="/compliance" class="{% if request.path=='/compliance' %}active{% endif %}">
+      <span class="icon">📊</span> Compliance Score
+    </a>
+    <a href="/whatif" class="{% if request.path=='/whatif' %}active{% endif %}">
+      <span class="icon">🔮</span> What-If Simulator
+    </a>
+    <a href="/goalplanner" class="{% if request.path=='/goalplanner' %}active{% endif %}">
+      <span class="icon">🎯</span> Goal Planner
+    </a>
+    <a href="/managementreview" class="{% if request.path=='/managementreview' %}active{% endif %}">
+      <span class="icon">📝</span> Management Review
+    </a>
+    <a href="/pdca" class="{% if request.path=='/pdca' %}active{% endif %}">
+      <span class="icon">🔄</span> PDCA Cycle
+    </a>
+    <a href="/gapanalysis" class="{% if request.path=='/gapanalysis' %}active{% endif %}">
+      <span class="icon">🔎</span> Gap Analysis
+    </a>
+    <a href="/policyexpiry" class="{% if request.path=='/policyexpiry' %}active{% endif %}">
+      <span class="icon">📅</span> Policy Expiry
+    </a>
+    <a href="/integrity" class="{% if request.path=='/integrity' %}active{% endif %}">
+      <span class="icon">🔍</span> Integrity Checker
+    </a>
+    <a href="/businessimpact" class="{% if request.path=='/businessimpact' %}active{% endif %}">
+      <span class="icon">💼</span> Business Impact
+    </a>
+    <a href="/auditreport" class="{% if request.path=='/auditreport' %}active{% endif %}">
+      <span class="icon">📄</span> Audit Report PDF
+    </a>
+    <a href="/trends" class="{% if request.path=='/trends' %}active{% endif %}">
+      <span class="icon">📈</span> Compliance Trends
+    </a>
+
+    <div class="nav-section">Analytics</div>
+    <a href="/graphs" class="{% if request.path=='/graphs' %}active{% endif %}">
+      <span class="icon">📈</span> Analytics
+    </a>
+    <a href="/blog" class="{% if '/blog' in request.path %}active{% endif %}">
+      <span class="icon">📰</span> Security Blog
+    </a>
+
+    {% if current_user.is_authenticated and current_user.role in ['admin','auditor'] %}
+    <a href="/incidents" class="{% if request.path=='/incidents' %}active{% endif %}">
+      <span class="icon">🚨</span> Incidents
+    </a>
+    <a href="/actions" class="{% if request.path=='/actions' %}active{% endif %}">
+      <span class="icon">📋</span> Corrective Actions
+    </a>
+    <a href="/admin/createuser" class="{% if request.path=='/admin/createuser' %}active{% endif %}">
+      <span class="icon">➕</span> Create User
+    </a>
+    <a href="/chatbot" class="{% if request.path=='/chatbot' %}active{% endif %}">
+      <span class="icon">🤖</span> AI Assistant
+    </a>
+    <a href="/chatbot" class="{% if request.path=='/chatbot' %}active{% endif %}">
+      <span class="icon">🤖</span> AI Assistant
+    </a>
+    <a href="/internalaudit" class="{% if request.path=='/internalaudit' %}active{% endif %}">
+      <span class="icon">🔍</span> Internal Audit
+    </a>
+    <a href="/evidence" class="{% if request.path=='/evidence' %}active{% endif %}">
+      <span class="icon">🗂️</span> Evidence Library
+    </a>
+    <a href="/checklists" class="{% if request.path=='/checklists' %}active{% endif %}">
+      <span class="icon">📋</span> Onboarding/Offboarding
+    </a>
+    <a href="/accessreview" class="{% if request.path=='/accessreview' %}active{% endif %}">
+      <span class="icon">👥</span> Access Review
+    </a>
+    <div class="nav-section">Admin</div>
+    <a href="/auditlog" class="{% if request.path=='/auditlog' %}active{% endif %}">
+      <span class="icon">📋</span> Audit Log
+    </a>
+    {% endif %}
+    {% if current_user.is_authenticated and current_user.role == 'admin' %}
+    <a href="/admin" class="{% if request.path=='/admin' %}active{% endif %}">
+      <span class="icon">⚙️</span> Admin Panel
+    </a>
+    <a href="/blog/new" class="{% if request.path=='/blog/new' %}active{% endif %}">
+      <span class="icon">✏️</span> Write Post
+    </a>
+    {% endif %}
+  </div>
+
+  {% if current_user.is_authenticated %}
+  <div class="role-badge">
+    <div class="rb-name">{{ current_user.username }}</div>
+    <div class="rb-role">{{ current_user.role }}</div>
+  </div>
+  {% endif %}
+
+  <div class="sidebar-footer">
+    <div class="powered">Powered by <span>Faseel Infosec</span></div>
+  </div>
+</div>
+
+<div class="main">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}
+      <div class="flash {{ cat }}">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  {% block content %}{% endblock %}
+</div>
+
+</body>
+</html>

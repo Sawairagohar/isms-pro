@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% block title %}Policy Expiry Tracker — Faseel Infosec{% endblock %}
+{% block content %}
+<style>
+  .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:28px; padding-bottom:20px; border-bottom:1px solid #1e293b; }
+  .topbar h1 { font-size:20px; }
+  .topbar a.logout { color:#f87171; text-decoration:none; font-size:13px; margin-left:16px; }
+  .stats-row { display:grid; grid-template-columns:repeat(5,1fr); gap:16px; margin-bottom:24px; }
+  .stat { background:#1e293b; border-radius:10px; padding:16px; border:1px solid #334155; text-align:center; }
+  .stat .sv { font-size:28px; font-weight:bold; }
+  .stat .sl { font-size:11px; color:#64748b; margin-top:4px; text-transform:uppercase; }
+  .section-title { font-size:15px; font-weight:bold; margin-bottom:12px; margin-top:24px; display:flex; align-items:center; gap:8px; }
+  .policy-card { background:#1e293b; border-radius:10px; padding:20px; border:1px solid #334155; margin-bottom:10px; display:grid; grid-template-columns:1fr auto; gap:16px; align-items:center; }
+  .policy-card.overdue  { border-left:4px solid #dc2626; }
+  .policy-card.urgent   { border-left:4px solid #d97706; }
+  .policy-card.warning  { border-left:4px solid #fbbf24; }
+  .policy-card.notice   { border-left:4px solid #3b82f6; }
+  .policy-card.ok       { border-left:4px solid #16a34a; }
+  .policy-card.nodate   { border-left:4px solid #475569; }
+  .policy-name { font-size:14px; font-weight:bold; color:#f1f5f9; margin-bottom:4px; }
+  .policy-meta { font-size:12px; color:#64748b; }
+  .badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:bold; margin-right:8px; }
+  .OVERDUE    { background:#7f1d1d; color:#fca5a5; }
+  .URGENT     { background:#78350f; color:#fcd34d; }
+  .WARNING    { background:#713f12; color:#fde68a; }
+  .NOTICE     { background:#1e3a5f; color:#93c5fd; }
+  .OK         { background:#14532d; color:#86efac; }
+  .NO-DATE    { background:#334155; color:#94a3b8; }
+  .actions-col { display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end; }
+  .btn-sm { padding:6px 14px; border-radius:8px; font-size:12px; cursor:pointer; text-decoration:none; border:none; }
+  .btn-ack  { background:#3b82f6; color:white; }
+  .btn-date { background:#334155; color:#f1f5f9; }
+  .date-form { display:flex; gap:6px; align-items:center; }
+  .date-form input { padding:5px 8px; border-radius:6px; border:1px solid #475569; background:#0f172a; color:#f1f5f9; font-size:12px; outline:none; }
+  .date-form button { padding:5px 12px; background:#16a34a; color:white; border:none; border-radius:6px; font-size:12px; cursor:pointer; }
+  .empty { color:#64748b; font-size:13px; padding:20px; text-align:center; background:#1e293b; border-radius:10px; border:1px solid #334155; }
+  .ack-count { font-size:11px; color:#4ade80; }
+</style>
+
+<div class="topbar">
+  <h1>📅 Policy Expiry Tracker
+    <span style="font-size:12px;color:#3b82f6;margin-left:8px;">Clause 7.5 — Document Review Alerts</span>
+  </h1>
+  <div style="font-size:13px;color:#64748b;">
+    {{ current_user.username }}
+    <a href="/logout" class="logout">Logout</a>
+  </div>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% for cat, msg in messages %}
+  <div style="padding:10px 16px;border-radius:8px;margin-bottom:20px;font-size:13px;background:#14532d;color:#86efac;">{{ msg }}</div>
+  {% endfor %}
+{% endwith %}
+
+<div class="stats-row">
+  <div class="stat"><div class="sv" style="color:#f87171;">{{ overdue|length }}</div><div class="sl">Overdue</div></div>
+  <div class="stat"><div class="sv" style="color:#fbbf24;">{{ urgent|length }}</div><div class="sl">Due in 30 days</div></div>
+  <div class="stat"><div class="sv" style="color:#fde68a;">{{ warning|length }}</div><div class="sl">Due in 60 days</div></div>
+  <div class="stat"><div class="sv" style="color:#60a5fa;">{{ notice|length }}</div><div class="sl">Due in 90 days</div></div>
+  <div class="stat"><div class="sv" style="color:#4ade80;">{{ ok|length }}</div><div class="sl">On Track</div></div>
+</div>
+
+{% if overdue %}
+<div class="section-title" style="color:#f87171;">❌ Overdue ({{ overdue|length }})</div>
+{% for item in overdue %}
+<div class="policy-card {% if item.label == 'NO DATE SET' %}nodate{% else %}overdue{% endif %}">
+  <div>
+    <div class="policy-name">{{ item.policy.title }}</div>
+    <div class="policy-meta">
+      <span class="badge {% if item.label == 'NO DATE SET' %}NO-DATE{% else %}OVERDUE{% endif %}">{{ item.label }}</span>
+      {% if item.days is not none %}{{ item.days }} days overdue{% else %}No review date set{% endif %}
+      &nbsp;·&nbsp; Uploaded by {{ item.policy.uploaded_by }}
+      &nbsp;·&nbsp; <span class="ack-count">{{ item.policy.acknowledged }} acknowledgements</span>
+    </div>
+  </div>
+  <div class="actions-col">
+    <a href="/policy/acknowledge/{{ item.policy.id }}" class="btn-sm btn-ack">✓ Acknowledge</a>
+    {% if current_user.role == 'admin' %}
+    <form class="date-form" method="POST" action="/policy/setreview/{{ item.policy.id }}">
+      <input type="date" name="review_date" required>
+      <button type="submit">Set Date</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endfor %}
+{% endif %}
+
+{% if urgent %}
+<div class="section-title" style="color:#fbbf24;">⚠️ Due Within 30 Days ({{ urgent|length }})</div>
+{% for item in urgent %}
+<div class="policy-card urgent">
+  <div>
+    <div class="policy-name">{{ item.policy.title }}</div>
+    <div class="policy-meta">
+      <span class="badge URGENT">URGENT</span>
+      {{ item.days }} days remaining
+      &nbsp;·&nbsp; Review by {{ item.policy.review_date.strftime('%d %b %Y') }}
+      &nbsp;·&nbsp; <span class="ack-count">{{ item.policy.acknowledged }} acknowledgements</span>
+    </div>
+  </div>
+  <div class="actions-col">
+    <a href="/policy/acknowledge/{{ item.policy.id }}" class="btn-sm btn-ack">✓ Acknowledge</a>
+  </div>
+</div>
+{% endfor %}
+{% endif %}
+
+{% if warning %}
+<div class="section-title" style="color:#fde68a;">🟡 Due Within 60 Days ({{ warning|length }})</div>
+{% for item in warning %}
+<div class="policy-card warning">
+  <div>
+    <div class="policy-name">{{ item.policy.title }}</div>
+    <div class="policy-meta">
+      <span class="badge WARNING">WARNING</span>
+      {{ item.days }} days remaining
+      &nbsp;·&nbsp; Review by {{ item.policy.review_date.strftime('%d %b %Y') }}
+    </div>
+  </div>
+  <div class="actions-col">
+    <a href="/policy/acknowledge/{{ item.policy.id }}" class="btn-sm btn-ack">✓ Acknowledge</a>
+  </div>
+</div>
+{% endfor %}
+{% endif %}
+
+{% if notice %}
+<div class="section-title" style="color:#60a5fa;">🔵 Due Within 90 Days ({{ notice|length }})</div>
+{% for item in notice %}
+<div class="policy-card notice">
+  <div>
+    <div class="policy-name">{{ item.policy.title }}</div>
+    <div class="policy-meta">
+      <span class="badge NOTICE">NOTICE</span>
+      {{ item.days }} days remaining
+      &nbsp;·&nbsp; Review by {{ item.policy.review_date.strftime('%d %b %Y') }}
+    </div>
+  </div>
+  <div class="actions-col">
+    <a href="/policy/acknowledge/{{ item.policy.id }}" class="btn-sm btn-ack">✓ Acknowledge</a>
+  </div>
+</div>
+{% endfor %}
+{% endif %}
+
+{% if ok %}
+<div class="section-title" style="color:#4ade80;">✅ On Track ({{ ok|length }})</div>
+{% for item in ok %}
+<div class="policy-card ok">
+  <div>
+    <div class="policy-name">{{ item.policy.title }}</div>
+    <div class="policy-meta">
+      <span class="badge OK">OK</span>
+      {{ item.days }} days remaining
+      &nbsp;·&nbsp; Review by {{ item.policy.review_date.strftime('%d %b %Y') }}
+      &nbsp;·&nbsp; <span class="ack-count">{{ item.policy.acknowledged }} acknowledgements</span>
+    </div>
+  </div>
+  <div class="actions-col">
+    <a href="/policy/acknowledge/{{ item.policy.id }}" class="btn-sm btn-ack">✓ Acknowledge</a>
+  </div>
+</div>
+{% endfor %}
+{% endif %}
+
+{% if not overdue and not urgent and not warning and not notice and not ok %}
+<div class="empty">No policy documents uploaded yet. <a href="/policies" style="color:#3b82f6;">Upload policies here.</a></div>
+{% endif %}
+{% endblock %}

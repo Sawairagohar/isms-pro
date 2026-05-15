@@ -1,159 +1,208 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>ISMS Dashboard</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: Arial, sans-serif; background: #0f172a; color: #f1f5f9; }
+{% extends "base.html" %}
+{% block title %}ISMS Dashboard{% endblock %}
+{% block content %}
+<style>
+  .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:28px; padding-bottom:20px; border-bottom:1px solid #1e293b; }
+  .topbar h1 { font-size:20px; }
+  .timestamp { font-size:12px; color:#64748b; }
+  .grid-4 { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px; }
+  .grid-3 { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:24px; }
+  .grid-2 { display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin-bottom:24px; }
+  .stat-card { background:#1e293b; border-radius:12px; padding:20px; border:1px solid #334155; position:relative; overflow:hidden; }
+  .stat-card .icon { font-size:28px; margin-bottom:8px; }
+  .stat-card .value { font-size:32px; font-weight:bold; margin-bottom:4px; }
+  .stat-card .label { font-size:12px; color:#64748b; text-transform:uppercase; }
+  .stat-card .sub { font-size:11px; color:#475569; margin-top:6px; }
+  .stat-card .accent { position:absolute; right:16px; top:16px; font-size:11px; padding:3px 8px; border-radius:20px; }
+  .card { background:#1e293b; border-radius:12px; padding:20px; border:1px solid #334155; margin-bottom:16px; }
+  .card h3 { font-size:14px; font-weight:bold; margin-bottom:16px; color:#f1f5f9; display:flex; justify-content:space-between; }
+  .card h3 a { font-size:12px; color:#3b82f6; text-decoration:none; font-weight:normal; }
+  .progress-bar { background:#0f172a; border-radius:10px; height:10px; overflow:hidden; margin:6px 0; }
+  .progress-fill { height:100%; border-radius:10px; }
+  .log-item { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #0f172a; font-size:12px; }
+  .log-item:last-child { border-bottom:none; }
+  .log-user { color:#3b82f6; font-weight:bold; min-width:80px; }
+  .log-action { color:#94a3b8; flex:1; margin:0 12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .log-time { color:#475569; min-width:100px; text-align:right; }
+  .alert-item { padding:10px 14px; border-radius:8px; margin-bottom:8px; font-size:13px; display:flex; justify-content:space-between; align-items:center; }
+  .alert-critical { background:#7f1d1d; border-left:4px solid #dc2626; color:#fca5a5; }
+  .alert-high { background:#78350f; border-left:4px solid #d97706; color:#fcd34d; }
+  .alert-info { background:#1e3a5f; border-left:4px solid #3b82f6; color:#93c5fd; }
+  .alert-warn { background:#713f12; border-left:4px solid #fbbf24; color:#fde68a; }
+  .badge { display:inline-block; padding:2px 8px; border-radius:20px; font-size:10px; font-weight:bold; }
+  .module-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:24px; }
+  .module-card { background:#1e293b; border-radius:10px; padding:16px; border:1px solid #334155; text-align:center; text-decoration:none; transition:border-color 0.2s; }
+  .module-card:hover { border-color:#3b82f6; }
+  .module-card .micon { font-size:24px; margin-bottom:8px; }
+  .module-card .mname { font-size:12px; color:#f1f5f9; font-weight:bold; }
+  .module-card .mcount { font-size:20px; font-weight:bold; margin:4px 0; }
+  .module-card .msub { font-size:11px; color:#64748b; }
+</style>
 
-    /* Sidebar */
-    .sidebar {
-      position: fixed; left: 0; top: 0; width: 220px; height: 100vh;
-      background: #1e293b; padding: 24px 0; border-right: 1px solid #334155;
-    }
-    .sidebar .logo {
-      color: #38bdf8; font-size: 16px; font-weight: bold;
-      padding: 0 20px 24px; border-bottom: 1px solid #334155; margin-bottom: 16px;
-    }
-    .sidebar .logo span { display: block; color: #64748b; font-size: 11px; font-weight: normal; margin-top: 4px; }
-    .sidebar a {
-      display: block; padding: 10px 20px; color: #94a3b8;
-      text-decoration: none; font-size: 14px; border-left: 3px solid transparent;
-    }
-    .sidebar a:hover, .sidebar a.active {
-      color: #38bdf8; background: #0f172a; border-left-color: #38bdf8;
-    }
-    .sidebar .role-badge {
-      margin: 20px; padding: 6px 10px; background: #0f172a;
-      border-radius: 6px; font-size: 11px; color: #38bdf8; text-align: center;
-    }
-
-    /* Main content */
-    .main { margin-left: 220px; padding: 32px; }
-    .topbar {
-      display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 32px;
-    }
-    .topbar h1 { font-size: 22px; color: #f1f5f9; }
-    .topbar .user { font-size: 13px; color: #64748b; }
-    .topbar a.logout {
-      color: #f87171; text-decoration: none; font-size: 13px; margin-left: 16px;
-    }
-
-    /* Stat cards */
-    .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 32px; }
-    .card {
-      background: #1e293b; border-radius: 12px; padding: 24px;
-      border: 1px solid #334155;
-    }
-    .card .label { font-size: 12px; color: #64748b; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
-    .card .value { font-size: 32px; font-weight: bold; }
-    .card .sub   { font-size: 12px; color: #64748b; margin-top: 6px; }
-    .card.red .value    { color: #f87171; }
-    .card.blue .value   { color: #38bdf8; }
-    .card.green .value  { color: #4ade80; }
-    .card.amber .value  { color: #fbbf24; }
-
-    /* Table */
-    .section { background: #1e293b; border-radius: 12px; padding: 24px; border: 1px solid #334155; }
-    .section h2 { font-size: 15px; color: #94a3b8; margin-bottom: 16px; }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th { text-align: left; color: #64748b; padding: 8px 12px; border-bottom: 1px solid #334155; font-weight: normal; }
-    td { padding: 10px 12px; border-bottom: 1px solid #1e293b; color: #cbd5e1; }
-    tr:last-child td { border-bottom: none; }
-
-    /* Flash messages */
-    .flash { padding: 10px 16px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; }
-    .flash.success { background: #14532d; color: #86efac; }
-    .flash.danger  { background: #7f1d1d; color: #fca5a5; }
-  </style>
-</head>
-<body>
-
-<!-- Sidebar -->
-<div class="sidebar">
-  <div class="logo">ISMS Platform <span>ISO 27001 Automation</span></div>
-  <a href="/dashboard" class="active">Dashboard</a>
-  <a href="/risk">Risk Management</a>
-  <a href="/training">Training Tracker</a>
-  <a href="/policies">Policy Manager</a>
-  <a href="/scan">Security Scan</a>
-  <a href="/ai">AI Assessment</a>
-  <a href="/graphs">Analytics</a>
-  {% if current_user.role in ['admin', 'auditor'] %}
-  <a href="/auditlog">Audit Log</a>
-  {% endif %}
-  {% if current_user.role == 'admin' %}
-  <a href="/admin">Admin Panel</a>
-  {% endif %}
-  <div class="role-badge">{{ current_user.role | upper }}</div>
+<div class="topbar">
+  <h1>📊 ISMS Dashboard
+    <span style="font-size:12px;color:#3b82f6;margin-left:8px;">ISO 27001:2022 — Live Overview</span>
+  </h1>
+  <div class="timestamp">Last updated: <span id="clock"></span></div>
 </div>
 
-<!-- Main -->
-<div class="main">
-  <div class="topbar">
-    <h1>Dashboard</h1>
-    <div class="user">
-      Logged in as <strong>{{ current_user.username }}</strong>
-      <a href="/logout" class="logout">Logout</a>
-    </div>
+<!-- ALERTS -->
+{% if critical_risks > 0 or open_incidents > 0 or open_findings > 0 or overdue_policies > 0 %}
+<div style="margin-bottom:24px;">
+  <div style="font-size:13px;font-weight:bold;margin-bottom:10px;color:#f87171;">⚠ Attention Required</div>
+  {% if critical_risks > 0 %}
+  <div class="alert-item alert-critical">
+    <span>🔴 {{ critical_risks }} CRITICAL risk(s) require immediate attention</span>
+    <a href="/risk" style="color:#fca5a5;font-size:12px;">View →</a>
   </div>
-
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% for cat, msg in messages %}
-      <div class="flash {{ cat }}">{{ msg }}</div>
-    {% endfor %}
-  {% endwith %}
-
-  <!-- Stat Cards -->
-  <div class="cards">
-    <div class="card blue">
-      <div class="label">Total Risks</div>
-      <div class="value">{{ total_risks }}</div>
-      <div class="sub">Registered in system</div>
-    </div>
-    <div class="card red">
-      <div class="label">Critical Risks</div>
-      <div class="value">{{ critical_risks }}</div>
-      <div class="sub">Score 20 or above</div>
-    </div>
-    <div class="card amber">
-      <div class="label">Pending Training</div>
-      <div class="value">{{ pending_training }}</div>
-      <div class="sub">of {{ total_training }} total</div>
-    </div>
-    <div class="card green">
-      <div class="label">Policies Uploaded</div>
-      <div class="value">{{ total_policies }}</div>
-      <div class="sub">Document library</div>
-    </div>
+  {% endif %}
+  {% if open_incidents > 0 %}
+  <div class="alert-item alert-high">
+    <span>🟠 {{ open_incidents }} open security incident(s) unresolved</span>
+    <a href="/incidents" style="color:#fcd34d;font-size:12px;">View →</a>
   </div>
+  {% endif %}
+  {% if open_findings > 0 %}
+  <div class="alert-item alert-warn">
+    <span>🟡 {{ open_findings }} open internal audit finding(s)</span>
+    <a href="/internalaudit" style="color:#fde68a;font-size:12px;">View →</a>
+  </div>
+  {% endif %}
+  {% if overdue_policies > 0 %}
+  <div class="alert-item alert-info">
+    <span>🔵 {{ overdue_policies }} policy review(s) overdue</span>
+    <a href="/policy" style="color:#93c5fd;font-size:12px;">View →</a>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
 
-  <!-- Recent Audit Log -->
-  <div class="section">
-    <h2>Recent Activity</h2>
-    {% if recent_logs %}
-    <table>
-      <tr>
-        <th>User</th>
-        <th>Action</th>
-        <th>IP</th>
-        <th>Time</th>
-      </tr>
-      {% for log in recent_logs %}
-      <tr>
-        <td>{{ log.user }}</td>
-        <td>{{ log.action }}</td>
-        <td>{{ log.ip }}</td>
-        <td>{{ log.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
-      </tr>
-      {% endfor %}
-    </table>
-    {% else %}
-    <p style="color:#64748b; font-size:13px;">No activity recorded yet.</p>
-    {% endif %}
+<!-- TOP STATS -->
+<div class="grid-4">
+  <div class="stat-card" style="border-left:4px solid #dc2626;">
+    <div class="icon">⚠️</div>
+    <div class="value" style="color:#f87171;">{{ total_risks }}</div>
+    <div class="label">Total Risks</div>
+    <div class="sub">{{ critical_risks }} critical · {{ high_risks }} high · {{ auto_risks }} auto-detected</div>
+  </div>
+  <div class="stat-card" style="border-left:4px solid #3b82f6;">
+    <div class="icon">📋</div>
+    <div class="value" style="color:#60a5fa;">{{ total_policies }}</div>
+    <div class="label">Policies</div>
+    <div class="sub">{{ overdue_policies }} overdue reviews</div>
+  </div>
+  <div class="stat-card" style="border-left:4px solid #16a34a;">
+    <div class="icon">🗂️</div>
+    <div class="value" style="color:#4ade80;">{{ evidence_pct }}%</div>
+    <div class="label">Evidence Coverage</div>
+    <div class="sub">{{ covered_controls }} of {{ total_controls }} controls covered</div>
+  </div>
+  <div class="stat-card" style="border-left:4px solid #d97706;">
+    <div class="icon">🔍</div>
+    <div class="value" style="color:#fbbf24;">{{ total_audits }}</div>
+    <div class="label">Internal Audits</div>
+    <div class="sub">{{ completed_audits }} completed · {{ open_findings }} open findings</div>
   </div>
 </div>
 
-</body>
-</html>
+<!-- MODULE OVERVIEW -->
+<div style="font-size:14px;font-weight:bold;margin-bottom:12px;">All Modules</div>
+<div class="module-grid">
+  <a href="/risk" class="module-card">
+    <div class="micon">⚠️</div>
+    <div class="mcount" style="color:#f87171;">{{ total_risks }}</div>
+    <div class="mname">Risk Register</div>
+    <div class="msub">{{ critical_risks }} critical</div>
+  </a>
+  <a href="/policy" class="module-card">
+    <div class="micon">📋</div>
+    <div class="mcount" style="color:#60a5fa;">{{ total_policies }}</div>
+    <div class="mname">Policies</div>
+    <div class="msub">{{ overdue_policies }} overdue</div>
+  </a>
+  <a href="/training" class="module-card">
+    <div class="micon">🎓</div>
+    <div class="mcount" style="color:#a78bfa;">{{ total_training }}</div>
+    <div class="mname">Training</div>
+    <div class="msub">{{ completed_training }} completed</div>
+  </a>
+  <a href="/incidents" class="module-card">
+    <div class="micon">🚨</div>
+    <div class="mcount" style="color:#f87171;">{{ total_incidents }}</div>
+    <div class="mname">Incidents</div>
+    <div class="msub">{{ open_incidents }} open</div>
+  </a>
+  <a href="/checklists" class="module-card">
+    <div class="micon">📝</div>
+    <div class="mcount" style="color:#4ade80;">{{ total_checklists }}</div>
+    <div class="mname">Checklists</div>
+    <div class="msub">{{ pending_checklists }} pending</div>
+  </a>
+  <a href="/evidence" class="module-card">
+    <div class="micon">🗂️</div>
+    <div class="mcount" style="color:#4ade80;">{{ covered_controls }}</div>
+    <div class="mname">Evidence</div>
+    <div class="msub">{{ evidence_pct }}% coverage</div>
+  </a>
+  <a href="/internalaudit" class="module-card">
+    <div class="micon">🔍</div>
+    <div class="mcount" style="color:#fbbf24;">{{ total_audits }}</div>
+    <div class="mname">Internal Audit</div>
+    <div class="msub">{{ open_findings }} findings open</div>
+  </a>
+  <a href="/supplier" class="module-card">
+    <div class="micon">🏢</div>
+    <div class="mcount" style="color:#38bdf8;">{{ total_suppliers }}</div>
+    <div class="mname">Suppliers</div>
+    <div class="msub">ISO 27001 Clause 5.19</div>
+  </a>
+</div>
+
+<!-- EVIDENCE + AUDIT LOG -->
+<div class="grid-2">
+  <div class="card">
+    <h3>🗂️ Evidence Coverage <a href="/evidence">View all →</a></h3>
+    <div style="font-size:13px;color:#94a3b8;margin-bottom:10px;">{{ covered_controls }} of {{ total_controls }} Annex A controls have evidence</div>
+    <div class="progress-bar">
+      <div class="progress-fill" style="width:{{ evidence_pct }}%;background:linear-gradient(90deg,#3b82f6,#16a34a);"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:#64748b;margin-top:6px;">
+      <span>{{ covered_controls }} covered</span>
+      <span>{{ evidence_pct }}%</span>
+      <span>{{ total_controls - covered_controls }} missing</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>🎓 Training Progress <a href="/training">View all →</a></h3>
+    <div style="font-size:13px;color:#94a3b8;margin-bottom:10px;">{{ completed_training }} of {{ total_training }} modules completed</div>
+    <div class="progress-bar">
+      <div class="progress-fill" style="width:{% if total_training > 0 %}{{ ((completed_training/total_training)*100)|int }}{% else %}0{% endif %}%;background:#a78bfa;"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:#64748b;margin-top:6px;">
+      <span>{{ completed_training }} done</span>
+      <span>{{ pending_training }} pending</span>
+    </div>
+  </div>
+</div>
+
+<!-- RECENT AUDIT LOG -->
+<div class="card">
+  <h3>📜 Recent Activity <a href="/auditlog">View all {{ total_logs }} entries →</a></h3>
+  {% for log in recent_logs %}
+  <div class="log-item">
+    <span class="log-user">{{ log.user }}</span>
+    <span class="log-action">{{ log.action }}</span>
+    <span class="log-time">{{ log.timestamp.strftime('%d %b %H:%M') }}</span>
+  </div>
+  {% endfor %}
+</div>
+
+<script>
+function updateClock() {
+  document.getElementById('clock').textContent = new Date().toLocaleTimeString();
+}
+updateClock();
+setInterval(updateClock, 1000);
+</script>
+{% endblock %}
